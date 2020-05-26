@@ -1,5 +1,5 @@
 #
-# Module for the MPI parallel running of streamingtools Convergers
+# Module for the MPI parallel running of psitools.direct Convergers
 #
 import numpy as np
 import numpy.linalg
@@ -14,7 +14,7 @@ import resource
 import multiprocessing
 import h5py
 
-import streamingtools
+from . import direct
 
 
 class MpiScheduler:
@@ -27,16 +27,17 @@ class MpiScheduler:
            arglist is a list of dictionaries, giving arguments for Converger"""
         self.exitFlag = False
         self.comm = MPI.COMM_WORLD
+        assert self.comm.size > 1
         self.rank = self.comm.Get_rank()
         self.nranks = self.comm.Get_size()
         self.wall_start = wall_start
         self.wall_limit_total = wall_limit_total
         if disttype == 'powerlaw':
-            self.Converger = streamingtools.Converger
+            self.Converger = direct.Converger
         elif disttype == 'lognormal':
-            self.Converger = streamingtools.ConvergerLogNormal
+            self.Converger = direct.ConvergerLogNormal
         elif disttype == 'powerbump':
-            self.Converger = streamingtools.ConvergerPowerBump
+            self.Converger = direct.ConvergerPowerBump
         else:
             raise ValueError('Unknown disttype '+disttype)
         if self.rank == 0:
@@ -177,9 +178,9 @@ def clean_results(arglist, disttype):
        from Converger"""
     for args in arglist:
         if disttype == 'powerlaw':
-            ait = streamingtools.Converger(**args)
+            ait = direct.Converger(**args)
         elif disttype == 'lognormal':
-            ait = streamingtools.ConvergerLogNormal(**args)
+            ait = direct.ConvergerLogNormal(**args)
         else:
             raise ValueError('Unknown disttype '+disttype)
         try:
@@ -209,7 +210,7 @@ def collect_grid_powerlaw(arglist, Kxgrid, Kzgrid, Kxaxis, Kzaxis, batchname,
     flatindex = 0
     for iz, kz in enumerate(Kzaxis):
         for ix, kx in enumerate(Kxaxis):
-            ait = streamingtools.Converger(**arglist[flatindex])
+            ait = direct.Converger(**arglist[flatindex])
             try:
                 with open(ait.picklename, 'rb') as picklefile:
                     ait = pickle.load(picklefile)
@@ -263,7 +264,7 @@ def collect_grid_powerbump(arglist, Kxgrid, Kzgrid, Kxaxis, Kzaxis, batchname,
     flatindex = 0
     for iz, kz in enumerate(Kzaxis):
         for ix, kx in enumerate(Kxaxis):
-            ait = streamingtools.ConvergerPowerBump(**arglist[flatindex])
+            ait = direct.ConvergerPowerBump(**arglist[flatindex])
             try:
                 with open(ait.picklename, 'rb') as picklefile:
                     ait = pickle.load(picklefile)
