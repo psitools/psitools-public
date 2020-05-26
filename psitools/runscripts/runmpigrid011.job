@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+#$ -pe parallel 48
+#$ -l infiniband=nxn
+#$ -l h_rt=72:00:0
+#$ -cwd
+#$ -j y
+#$ -N st011
+##$ -hold_jid 964179
+
+echo "Hello"
+
+module purge
+module load intel/2017.3
+module load intelmpi/2017.3
+module load intelpython 
+
+module list
+
+mpirun -np $NSLOTS  python3 -u runmpigrid011.py compute

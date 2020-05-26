@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# Demo running the MpiScheduler for a grid 
+# You need the conda environment STE (see STE_environment.yml)
+#
+#$ -pe parallel 32
+#$ -l infiniband=nxn
+#$ -l h_rt=2:00:00
+#$ -cwd
+#$ -j y
+#$ -N testMpiSched
+
+echo "Hello"
+
+module purge
+#module load intelmpi
+module load intel/2017.3
+module load intelmpi/2017.3
+
+#module load intelpython 
+
+module load anaconda3/2018.12
+. /share/apps/centos7/anaconda3/2018.12/etc/profile.d/conda.sh
+conda activate STE
+
+module list
+
+#check the numpy and scipy config details
+python -c "import numpy; numpy.show_config()"
+python -c "import scipy; scipy.show_config()"
+
+time mpirun -np 8 -ppn 4 -hosts $(cut -d. -f1 $PE_HOSTFILE|tr \\n ,)  python3 -u test_MpiScheduler.py compute
