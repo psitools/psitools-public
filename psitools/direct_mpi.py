@@ -18,7 +18,7 @@ from . import direct
 
 
 class MpiScheduler:
-    """ Execute a set of AitkenConverger runs with a list of parameters
+    """ Execute a set of Converger runs with a list of parameters
         on MPI tasks"""
 
     def __init__(self, arglist, wall_start, wall_limit_total,
@@ -44,7 +44,7 @@ class MpiScheduler:
             self.masterprocess(arglist)
         else:
             self.slaveprocess(arglist)
-         MPI.Finalize()
+        MPI.Finalize()
 
     def masterprocess(self, campaign):
         """This is the master process, make a work list and send out
