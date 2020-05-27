@@ -44,6 +44,7 @@ class MpiScheduler:
             self.masterprocess(arglist)
         else:
             self.slaveprocess(arglist)
+         MPI.Finalize()
 
     def masterprocess(self, campaign):
         """This is the master process, make a work list and send out
