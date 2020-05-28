@@ -66,12 +66,13 @@ class PSIMode():
         self.max_convergence_iterations = 0
         self.minimum_interpolation_nodes = 4
 
+        # AAA rational approximation
         self.ra = cr.RationalApproximation(self.domain,
                                            tol=tol,
                                            clean_tol=clean_tol)
 
     def calculate(self, wave_number_x, wave_number_z, viscous_alpha=0):
-        """Calculate complex mode frequency at wave number Kx and Kz.
+        """Calculate complex mode frequency at wave number Kx and Kz and viscosity parameter viscous_alpha.
 
         Args:
             wave_number_x: Nondimensional (using YG05) x wave number
@@ -279,32 +280,34 @@ class PSIMode():
 
     def plot_dispersion(self, wave_number_x, wave_number_z,
                         viscous_alpha=0,
-                        N=100, show_exact=False, x=None, y=None,
-                        log_flags=(False,False)):
-        """Plot the approximate dispersion relation over the whole domain, and, possibly, the exact dispersion relation to compare (*very* expensive)."""
+                        N=100, show_exact=False, x=None, y=None):
+        """Plot the approximate dispersion relation over the whole domain, and, possibly, the exact dispersion relation to compare (*very* expensive).
+
+        Args:
+            wave_number_x: Nondimensional (using YG05) x wave number
+            wave_number_z: Nondimensional (using YG05) z wave number
+            viscous_alpha (optional): Background turbulent gas viscosity parameter. Defaults to zero.
+            N (optional): Numer of points to plot in x and y, defaults to 100
+            show_exact (optional): If True, also plot the exact dispersion relation (*very* expensive). Defaults to False.
+            x (optional): Array of x values to plot. Defaults to None, in which case the whole x domain is shown with N equidistant points.
+            y (optional): Array of y values to plot. Defaults to None, in which case the whole y domain is shown with N equidistant points.
+        """
         if (x is None or y is None):
             x, y = self.domain.grid_xy(N=N)
         xv, yv = np.meshgrid(x, y)
         z = xv + 1j*yv
 
+        # Rational approximation
         f_appro = self.ra.evaluate(z)
 
         if show_exact == True:
             f_exact = self.dispersion(z, wave_number_x, wave_number_z,
                                       viscous_alpha=viscous_alpha)
             plt.subplot(122)
-            if (log_flags[0] == True):
-                plt.xscale('log')
-            if (log_flags[1] == True):
-                plt.yscale('log')
             plt.contourf(x, y, np.log10(np.abs(f_exact)), 20)
             plt.colorbar()
             plt.subplot(121)
 
-        if (log_flags[0] == True):
-            plt.xscale('log')
-        if (log_flags[1] == True):
-            plt.yscale('log')
         plt.contourf(x, y, np.log10(np.abs(f_appro)), 20)
         plt.colorbar()
 
