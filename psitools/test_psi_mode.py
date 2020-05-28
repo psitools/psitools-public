@@ -40,7 +40,7 @@ def test_psi_mode_1():
     print('roots')
     for root in roots:
         print(root)
-    refs = [-1.0062579942553218+1.3209784880018007e-05j]
+    refs = [-1.0062579942546936+1.3209787635623396e-05j]
     for ans, ref in zip(roots, refs):
         npt.assert_allclose(ans.real, ref.real, rtol=rtol)
         npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
@@ -97,7 +97,7 @@ def test_psi_mode_3():
     print('roots')
     for root in roots:
         print(root)
-    refs = [0.5079584667900242+0.6222125611991047j]
+    refs = [0.5079586139807656+0.6222125593321822j]
     for ans, ref in zip(roots, refs):
         npt.assert_allclose(ans.real, ref.real, rtol=rtol)
         npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
