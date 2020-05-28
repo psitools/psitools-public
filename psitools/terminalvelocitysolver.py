@@ -2,6 +2,7 @@
 
 import numpy as np
 import scipy.optimize as opt
+import warnings
 
 class TerminalVelocitySolver():
     def __init__(self,
@@ -207,15 +208,19 @@ class PSIModeTV():
 
     def F_integral(self, z, s):
         """Calculate the F integral, or, actually F(z)/(1+z)"""
+
+        if 1 - s < 1.0e-12:
+            return 1/(1 + z)
+
         s1 = np.power(s, 1 - self.b)
         s2 = np.power(s, 2 - self.b)
 
-        w = z*(self.b - 1)*(1 - s2)/((self.b - 2)*(1 - s1))
+        w = z*(self.b - 1)*(1 - s2)/((self.b - 2)*(1 - s1 + 1.0e-30))
 
         arg = (1 - np.sqrt(s))/(np.sqrt(w) + np.sqrt(s/w))
 
         if self.b == 0.5:
-            return  1 - np.sqrt(w)*self.atanc(arg)/(1 - np.sqrt(s))
+            return 1 - np.sqrt(w)*self.atanc(arg)/(1 - np.sqrt(s))
         elif self.b == 1.5:
             return -self.atanc(arg)/(np.sqrt(w)*(1 - s1))
         elif self.b == 2.5:
@@ -225,6 +230,19 @@ class PSIModeTV():
         else:
             raise NotImplementedError(('No form for the I2 integral for this'
                                        ' parameter b {:e}').format(self.b))
+
+    def omega_to_z(self, w, tau, Kx, Kz):
+        fg = 1 - self.fd
+        K2 = Kx**2 + Kz**2
+        fac = 2*fg*tau*Kx
+        return (w - self.fd*fac + 1j*self.D*K2)/fac
+
+    def z_to_omega(self, z, tau, Kx, Kz):
+        fg = 1 - self.fd
+        K2 = Kx**2 + Kz**2
+        fac = 2*fg*tau*Kx
+
+        return fac*(z + self.fd) - 1j*self.D*K2
 
     # Secular mode single size at tau = tau_max, use as starting point
     def single_size_z(self, Kx, Kz):
@@ -236,9 +254,9 @@ class PSIModeTV():
 
         # Coefficients of cubic dispersion relation
         a = 1
-        b = (2*fg*fg*Kx + 1j*self.fd)*self.tau_max
-        c = -Kz**2/K2
-        d = 2*fg*(self.fd - fg)*Kz**2*Kx*self.tau_max/K2
+        b = (2*fg*fg*Kx + 1j*self.fd)*self.tau_max + 1j*self.D*K2
+        c = self.fd*self.tau_max*self.D*K2 - Kz**2/K2
+        d = 2*fg*(self.fd - fg)*Kz**2*Kx*self.tau_max/K2 - 1j*self.D*Kz**2
 
         # Roots of 3rd order polynomial
         roots = np.roots([a, b, c, d])
@@ -247,8 +265,8 @@ class PSIModeTV():
         w = roots[np.argmax(np.imag(roots))]
 
         # Convert from w to z
-        z = (w - 2*fg*self.fd*self.tau_max*Kx)/(2*fg*Kx*self.tau_max)
-        return z
+        #z = (w - 2*fg*self.fd*self.tau_max*Kx)/(2*fg*Kx*self.tau_max)
+        return self.omega_to_z(w, self.tau_max, Kx, Kz)
 
     def average_tau(self, s):
         """Average stopping time"""
@@ -265,14 +283,14 @@ class PSIModeTV():
         tau = self.average_tau(s)
         fg = 1 - self.fd
 
-        omega = 2*fg*Kx*tau*(z + self.fd)
+        omega = self.z_to_omega(z, tau, Kx, Kz)
+
         K2 = Kx*Kx + Kz*Kz
-        A = 2*fg*K2*tau*tau*Kx/Kz**2
 
         # Dispersion relation: lhs = fac*fac2
         lhs = 1.0 - K2*omega**2/Kz**2
 
-        fac = self.fd*(1j*A*np.power(z + self.fd, 2) + 1)
+        fac = self.fd*(1j*omega*tau*K2*(z + self.fd)/Kz**2 + 1)
         fac2 = self.F_integral(z, s)
 
         return fac*fac2 - lhs
@@ -328,7 +346,8 @@ class PSIModeTV():
         return z
 
     # Find roots of dispersion relation for all tau_min
-    def find_roots(self, minimum_stokes, Kx, Kz):
+    def find_roots(self, minimum_stokes, Kx, Kz,
+                   viscous_alpha=0, c_over_eta=20):
         """Find roots of dispersion relation.
 
         Args:
@@ -336,6 +355,10 @@ class PSIModeTV():
             Kx: Dimensionless wave number in x
             Kz: Dimensionless wave number in z
         """
+
+        # Dust diffusion coefficient
+        self.D = viscous_alpha*c_over_eta**2
+
         # Make sure we can handle scalar and vector input.
         tau_min = np.asarray(minimum_stokes)
         scalar_input_tau_min = False
@@ -356,8 +379,8 @@ class PSIModeTV():
         z0 = self.single_size_z(Kx, Kz)
 
         # Work towards smaller s
-        for j, t_min in zip(idx, tau_min):
-            s_want = t_min/self.tau_max
+        for j in idx:
+            s_want = tau_min[j]/self.tau_max
             z[j] = self.find_root(s_want, s_start, z0, Kx, Kz)
             s_start = s_want
             z0 = z[j]
@@ -366,7 +389,8 @@ class PSIModeTV():
 
         # Convert from z to omega
         tau = self.average_tau(tau_min/self.tau_max)
-        ret =  2*(1 - self.fd)*Kx*tau*(z + self.fd)
+
+        ret = self.z_to_omega(z, tau, Kx, Kz)
 
         if scalar_input_tau_min:
             return np.squeeze(ret)
