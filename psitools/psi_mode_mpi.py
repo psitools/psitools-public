@@ -30,6 +30,7 @@ class MpiScheduler:
         else:
             self.slaveprocess(arglist)
             return None  # so we know in caller this was a slave
+        MPI.Finalize()
 
     def masterprocess(self, campaign):
         """This is the master process, make a work list and send out
