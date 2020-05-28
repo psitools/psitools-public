@@ -42,6 +42,10 @@ class PSIDispersion():
 
         self.poles = self.size_density.poles
 
+        # Error tolerances in calls to quadpack
+        self.quad_epsrel = 1.49e-12
+        self.quad_epsabs = 1.49e-9
+
         # Equilibrium dust and gas velocities
         j0 = np.real(self.int_j(0))
         j1 = np.real(self.int_j(1))
@@ -57,7 +61,9 @@ class PSIDispersion():
 
         # The integral that gives trouble; full_output=1 prevents a warning
         res, err, info, msg = \
-          integrate.quad(f, a, b, points=poles, full_output=1)
+          integrate.quad(f, a, b, points=poles, full_output=1,
+                         epsabs=self.quad_epsabs,
+                         epsrel=self.quad_epsrel)
 
         # Select subintervals that have an error that is too large
         sel = np.asarray(info['elist'][0:info['last']] > 1.5e-8).nonzero()
@@ -71,10 +77,14 @@ class PSIDispersion():
 
             # Integrate subinterval separately
             try:
-                r_sub = integrate.quad(f, a_max, b_max)[0]
+                r_sub = integrate.quad(f, a_max, b_max,
+                                       epsabs=self.quad_epsabs,
+                                       epsrel=self.quad_epsrel)[0]
             except:
                 # Repeat recursively if necessary
-                r_sub = self.correct_integral(f, a_max, b_max, [])
+                r_sub = self.correct_integral(f, a_max, b_max, [],
+                                              epsabs=self.quad_epsabs,
+                                              epsrel=self.quad_epsrel)
 
             # Update result with new value for subinterval
             res = res - r_max + r_sub
@@ -107,11 +117,15 @@ class PSIDispersion():
         # Make warnings errors that we can catch
         warnings.simplefilter('error', integrate.IntegrationWarning)
         try:
-            retR = integrate.quad(fR, a, b, points=poles)[0]
+            retR = integrate.quad(fR, a, b, points=poles,
+                                  epsabs=self.quad_epsabs,
+                                  epsrel=self.quad_epsrel)[0]
         except:
             retR = self.correct_integral(fR, a, b, poles)
         try:
-            retI = integrate.quad(fI, a, b, points=poles)[0]
+            retI = integrate.quad(fI, a, b, points=poles,
+                                  epsabs=self.quad_epsabs,
+                                  epsrel=self.quad_epsrel)[0]
         except:
             retI = self.correct_integral(fI, a, b, poles)
         # Back to default warning behaviour
