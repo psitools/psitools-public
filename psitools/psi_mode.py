@@ -164,8 +164,11 @@ class PSIMode():
 
             # Not root found: add zoom domains
             for zoom_centre in zoom_roots:
-                self.add_extra_domain(extra_domain_size=0.1,
+                # Limit y-size to something sensible
+                sz = [0.1, np.min([0.1, np.abs(np.imag(zoom_centre))])]
+                self.add_extra_domain(extra_domain_size=sz,
                                       centre=zoom_centre)
+
         return ret
 
     def log_print(self, arg):
@@ -186,22 +189,22 @@ class PSIMode():
         sel = np.asarray(self.domain.is_in(zeros)).nonzero()
         return zeros[sel]
 
-    def add_extra_domain(self, extra_domain_size=0.1, centre=0.0):
+    def add_extra_domain(self, extra_domain_size=[0.1, 0.1], centre=0.0):
         """Add extra sample points in domain close to real axis"""
 
         # Make sure whole zoom domain is inside original domain
-        if np.real(centre) < self.domain.xmin + 0.5*extra_domain_size:
-            centre = self.domain.xmin + 0.5*extra_domain_size + \
+        if np.real(centre) < self.domain.xmin + 0.5*extra_domain_size[0]:
+            centre = self.domain.xmin + 0.5*extra_domain_size[0] + \
               1j*np.imag(centre)
-        if np.real(centre) > self.domain.xmax - 0.5*extra_domain_size:
-            centre = self.domain.xmax - 0.5*extra_domain_size + \
+        if np.real(centre) > self.domain.xmax - 0.5*extra_domain_size[0]:
+            centre = self.domain.xmax - 0.5*extra_domain_size[0] + \
               1j*np.imag(centre)
-        if np.imag(centre) < self.domain.ymin + 0.5*extra_domain_size:
+        if np.imag(centre) < self.domain.ymin + 0.5*extra_domain_size[1]:
             centre = np.real(centre) + 1j*(self.domain.ymin +
-                                           0.5*extra_domain_size)
-        if np.imag(centre) > self.domain.ymax - 0.5*extra_domain_size:
+                                           0.5*extra_domain_size[1])
+        if np.imag(centre) > self.domain.ymax - 0.5*extra_domain_size[1]:
             centre = np.real(centre) + 1j*(self.domain.ymax -
-                                           0.5*extra_domain_size)
+                                           0.5*extra_domain_size[1])
 
         self.log_print('Adding zoom domain around {}'.format(centre))
 
@@ -209,15 +212,16 @@ class PSIMode():
         extra_n_sample = self.n_sample
 
         # Create zoom domain around potential mode
-        real_range = [np.real(centre) - 0.5*extra_domain_size,
-                      np.real(centre) + 0.5*extra_domain_size]
-        imag_range = [np.imag(centre) - 0.5*extra_domain_size,
-                      np.imag(centre) + 0.5*extra_domain_size]
+        real_range = [np.real(centre) - 0.5*extra_domain_size[0],
+                      np.real(centre) + 0.5*extra_domain_size[0]]
+        imag_range = [np.imag(centre) - 0.5*extra_domain_size[1],
+                      np.imag(centre) + 0.5*extra_domain_size[1]]
         extra_domain = cr.Rectangle(real_range, imag_range)
 
         # Generate sample points
         extra_z_sample = \
           extra_domain.generate_random_sample_points(extra_n_sample)
+
         extra_f_sample = self.disp(extra_z_sample)
 
         # Add to original arrays
