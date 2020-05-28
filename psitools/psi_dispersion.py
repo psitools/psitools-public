@@ -66,7 +66,8 @@ class PSIDispersion():
                          epsrel=self.quad_epsrel)
 
         # Select subintervals that have an error that is too large
-        sel = np.asarray(info['elist'][0:info['last']] > 1.5e-8).nonzero()
+        sel = np.asarray(info['elist'][0:info['last']] >
+                         self.quad_epsabs).nonzero()
 
         # Loop through all troublesome subintervals
         for i in sel[0]:
