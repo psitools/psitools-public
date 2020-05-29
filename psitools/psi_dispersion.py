@@ -83,9 +83,7 @@ class PSIDispersion():
                                        epsrel=self.quad_epsrel)[0]
             except:
                 # Repeat recursively if necessary
-                r_sub = self.correct_integral(f, a_max, b_max, [],
-                                              epsabs=self.quad_epsabs,
-                                              epsrel=self.quad_epsrel)
+                r_sub = self.correct_integral(f, a_max, b_max, [])
 
             # Update result with new value for subinterval
             res = res - r_max + r_sub
