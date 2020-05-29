@@ -128,7 +128,9 @@ class PSIMode():
                 # Start secant iteration from this root if no growing roots
                 maximum_growing_zero = zoom_roots[zoom_roots.imag.argmax()]
                 # Select roots that are *almost* growing as zoom sites
-                sel = np.asarray(np.imag(zoom_roots) > -0.01)
+                #sel = np.asarray(np.imag(zoom_roots) > -0.01)
+                sel = np.asarray(np.imag(zoom_roots) >
+                                 -2*np.abs(np.imag(maximum_growing_zero)))
                 zoom_roots = zoom_roots[sel]
 
                 # Make sure we always have a zoom domain
@@ -265,8 +267,14 @@ class PSIMode():
             np.abs(z.root - w0)/np.abs(w0) < 1 and
             max_iter > 5):
             self.log_print("Starting further iteration")
+
+            # Start where we left off, again need second point
+            w0 = z.root
+            w1 = w0 * (1 + eps)
+            w1 += (eps if w1.real >= 0 else -eps)
+
             z = opt.root_scalar(self.disp, method='secant',
-                                x0=z.root, x1=w0,
+                                x0=w0, x1=w1,
                                 maxiter=max_iter)
             self.n_function_call += z.function_calls
             self.log_print(z)
