@@ -307,7 +307,6 @@ class Rectangle():
     def generate_random_sample_points(self, n_sample):
         """Generate n_sample points, distributed randomly over rectangle."""
         x = np.random.uniform(self.xmin, self.xmax, n_sample)
-        #y = np.power(10.0, np.random.uniform(np.log10(self.ymin), np.log10(self.ymax), n_sample))
         y = np.random.uniform(self.ymin, self.ymax, n_sample)
 
         return x + 1j*y
