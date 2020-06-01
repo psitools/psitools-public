@@ -375,7 +375,7 @@ class RootFollower():
             k_step = kw - k
 
             finished = False
-            print('kw = ', kw)
+            #print('kw = ', kw)
             while (True):
                 if (finished is True):
                     break
@@ -390,11 +390,12 @@ class RootFollower():
                                         maxiter=10)
 
                     if (z.converged is True):
-                        print("Converged at z = ", z.root)
-                        break
+                        if z.root.imag*z0.imag > 0:
+                            print("Converged at z = ", z.root)
+                            break
 
-                    z0 = z1
-                    z1 = z.root
+                    #z0 = z1
+                    #z1 = z.root
 
                     k_step = k_step/10
                     if (k_step < 1.0e-6):
