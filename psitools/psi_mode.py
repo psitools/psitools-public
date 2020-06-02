@@ -65,13 +65,15 @@ class PSIMode():
 
         self.max_convergence_iterations = 0
         self.minimum_interpolation_nodes = 4
+        self.force_at_least_one_root = True
 
         # AAA rational approximation
         self.ra = cr.RationalApproximation(self.domain,
                                            tol=tol,
                                            clean_tol=clean_tol)
 
-    def calculate(self, wave_number_x, wave_number_z, viscous_alpha=0):
+    def calculate(self, wave_number_x, wave_number_z, viscous_alpha=0,
+                  guess_roots=[]):
         """Calculate complex mode frequency at wave number Kx and Kz and viscosity parameter viscous_alpha.
 
         Args:
@@ -91,15 +93,28 @@ class PSIMode():
         self.n_function_call = self.n_sample
         self.f_sample = self.disp(self.z_sample)
 
+        # Put zoom domain around guessed roots
+        for centre in guess_roots:
+            self.add_extra_domain(extra_domain_size=[0.001, 0.001],
+                                  centre=centre)
+
         for n in range(0, self.max_zoom_domains + 1):
             # Calculate rational approximation
             self.ra.calculate(self.f_sample, self.z_sample)
 
-            # If number of nodes too small, reduce clean tolerance
+            # Find the zeros of the rational approximation.
+            zeros = self.ra.find_zeros()
+            sel = np.asarray(self.domain.is_in(zeros)).nonzero()
+            zeros = zeros[sel]
+
+            # Reduce clean tolerance until enough nodes and at least one root
             old_clean_tol = self.ra.clean_tol
-            while (np.sum(self.ra.maskF) < self.minimum_interpolation_nodes):
-                warnings.warn(('Numer of nodes too small: '
-                               'reducing clean_tol'))
+            while (np.sum(self.ra.maskF) <
+                   (1 + n)*self.minimum_interpolation_nodes or
+                   (len(zeros) == 0 and self.force_at_least_one_root == True)):
+                #warnings.warn(('Number of nodes too small or '
+                #               'no zeros in domain: '
+                #               'reducing clean_tol'))
                 self.ra.clean_tol = 0.5*self.ra.clean_tol
 
                 # Stop if too small, nothing to be done at this point
@@ -109,6 +124,12 @@ class PSIMode():
                 self.log_print('Reducing clean_tol to '
                                '{}'.format(self.ra.clean_tol))
                 self.ra.calculate(self.f_sample, self.z_sample)
+
+                # Find the zeros of the rational approximation.
+                zeros = self.ra.find_zeros()
+                sel = np.asarray(self.domain.is_in(zeros)).nonzero()
+                zeros = zeros[sel]
+
             self.ra.clean_tol = old_clean_tol
 
             n_nodes = np.sum(self.ra.maskF)
@@ -136,6 +157,17 @@ class PSIMode():
                 # Make sure we always have a zoom domain
                 if len(zoom_roots) == 0:
                     zoom_roots = np.asarray([maximum_growing_zero])
+
+                if (n > 0 and
+                    len(zoom_roots) > 1):
+                    # Sort according to imaginary part
+                    zoom_roots = zoom_roots[np.argsort(np.imag(zoom_roots))]
+                    n_zoom = np.sum(np.asarray(zoom_roots.imag > 0))
+                    if (n_zoom > 0 and
+                        n_zoom < len(zoom_roots) - 1):
+                        zoom_roots = zoom_roots[(-n_zoom-1):]
+
+
             else:
                 # Nothing to zoom into or to start searching from
                 maximum_growing_zero = None
@@ -144,6 +176,10 @@ class PSIMode():
             sel = np.asarray(self.domain.is_in(zeros)).nonzero()
             zeros = np.asarray(zeros[sel])
             self.log_print('All zeros in domain: {}'.format(zeros))
+
+            # For multiple zoom levels, zoom in only on actual zeros
+            #if n > 0:
+            #    zoom_roots = np.copy(zeros)
 
             max_iter = self.max_secant_iterations
             # If we can still zoom, limit iterations
@@ -166,8 +202,12 @@ class PSIMode():
 
             # Not root found: add zoom domains
             for zoom_centre in zoom_roots:
-                # Limit y-size to something sensible
-                sz = [0.1, np.min([0.1, np.abs(np.imag(zoom_centre))])]
+                # Reduce x size for higher zoom levels
+                sx = np.power(10.0, -1-n)
+                # Limit y size to imaginary part of centre
+                sy = np.min([0.1, np.abs(np.imag(zoom_centre))])
+
+                sz = [sx, sy]
                 self.add_extra_domain(extra_domain_size=sz,
                                       centre=zoom_centre)
 
@@ -193,6 +233,8 @@ class PSIMode():
 
     def add_extra_domain(self, extra_domain_size=[0.1, 0.1], centre=0.0):
         """Add extra sample points in domain close to real axis"""
+
+        original_centre = centre
 
         # Make sure whole zoom domain is inside original domain
         if np.real(centre) < self.domain.xmin + 0.5*extra_domain_size[0]:
@@ -223,6 +265,9 @@ class PSIMode():
         # Generate sample points
         extra_z_sample = \
           extra_domain.generate_random_sample_points(extra_n_sample)
+
+        if extra_domain.is_in(original_centre):
+            extra_z_sample[0] = original_centre
 
         extra_f_sample = self.disp(extra_z_sample)
 
