@@ -122,7 +122,7 @@ class PSIMode():
                 self.ra.clean_tol = 0.5*self.ra.clean_tol
 
                 # Stop if too small, nothing to be done at this point
-                if self.ra.clean_tol < 1.0e-16:
+                if self.ra.clean_tol < self.ra.tol:
                     break
 
                 self.log_print('Reducing clean_tol to '
