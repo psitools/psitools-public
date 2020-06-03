@@ -116,39 +116,48 @@ class RationalApproximation():
 
     def find_zeros(self):
         """Find zeros of rational approximation"""
-        ## mf = np.ma.masked_array(self.f, mask=1-self.maskF).compressed()
-        ## mz = np.ma.masked_array(self.z, mask=1-self.maskF).compressed()
-
-        ## # Construct arrowhead matrix A
-        ## d = np.insert(mz, 0, 0)
-        ## A = np.diag(d)
-        ## A[0, 1:] = self.weights*mf
-        ## A[1:, 0] = np.ones(len(mz))
-
-        ## B = np.diag(np.insert(np.ones(len(mz)), 0, 0))
-
-        ## # Generalized eigenvalue problem
-        ## e, v = sp.linalg.eig(A, B)
-
-        ## print('Roots from arrowhead:', e)
-
-        ## # First two will be infinity, ignore
-        ## return e[2:]
-
-        # Compress to nodes used
         mf = np.ma.masked_array(self.f, mask=1-self.maskF).compressed()
         mz = np.ma.masked_array(self.z, mask=1-self.maskF).compressed()
 
-        sf = self.weights*mf
-        c = np.zeros(np.shape(sf), dtype=np.complex128)
+        # Construct arrowhead matrix A
+        d = np.insert(mz, 0, 0)
+        A = np.diag(d)
+        A[0, 1:] = self.weights*mf
+        A[1:, 0] = np.ones(len(mz))
 
-        for i in range(0, len(mf)):
-            roots_l = np.concatenate((mz[:i], mz[i+1:]))
-            bj = np.polynomial.polynomial.polyfromroots(roots_l)
-            c = c + sf[i]*bj
+        B = np.diag(np.insert(np.ones(len(mz)), 0, 0))
 
-        return np.polynomial.polynomial.polyroots(c)
+        # Generalized eigenvalue problem
+        e, v = sp.linalg.eig(A, B)
 
+        # First two will be infinity, ignore
+        poly_roots = e[2:]
+
+        # Do secant iteration to improve roots
+        for i in range(0, len(poly_roots)):
+            eps = 1.0e-6
+            z0 = poly_roots[i]
+            z1 = z0*(1 + eps)
+            z1 += (eps if z1.real >= 0 else -eps)
+
+            poly_roots[i] = opt.root_scalar(self.evaluate, method='secant',
+                                            x0=z0, x1=z1).root
+
+        return poly_roots
+
+        ## # Compress to nodes used
+        ## mf = np.ma.masked_array(self.f, mask=1-self.maskF).compressed()
+        ## mz = np.ma.masked_array(self.z, mask=1-self.maskF).compressed()
+
+        ## sf = self.weights*mf
+        ## c = np.zeros(np.shape(sf), dtype=np.complex128)
+
+        ## for i in range(0, len(mf)):
+        ##     roots_l = np.concatenate((mz[:i], mz[i+1:]))
+        ##     bj = np.polynomial.polynomial.polyfromroots(roots_l)
+        ##     c = c + sf[i]*bj
+
+        ## return np.polynomial.polynomial.polyroots(c)
 
     def find_poles(self):
         """Find poles of rational approximation"""
