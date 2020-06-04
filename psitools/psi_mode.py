@@ -108,9 +108,13 @@ class PSIMode():
             zeros = zeros[sel]
 
             # Reduce clean tolerance until enough nodes and at least one root
+            min_nodes = self.minimum_interpolation_nodes
+            fac = 1 + n
+            if len(guess_roots) > 0:
+                fac = fac + 1
+            min_nodes *= (1 + n + len(guess_roots))
             old_clean_tol = self.ra.clean_tol
-            while (np.sum(self.ra.maskF) <
-                   (1 + n)*self.minimum_interpolation_nodes or
+            while (np.sum(self.ra.maskF) < min_nodes or
                    (len(zeros) == 0 and self.force_at_least_one_root == True)):
                 #warnings.warn(('Number of nodes too small or '
                 #               'no zeros in domain: '
@@ -118,7 +122,7 @@ class PSIMode():
                 self.ra.clean_tol = 0.5*self.ra.clean_tol
 
                 # Stop if too small, nothing to be done at this point
-                if self.ra.clean_tol < 1.0e-16:
+                if self.ra.clean_tol < self.ra.tol:
                     break
 
                 self.log_print('Reducing clean_tol to '
