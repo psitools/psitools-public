@@ -4,6 +4,7 @@ import numpy as np
 import scipy as sp
 import scipy.optimize as opt
 
+import warnings
 
 class RationalApproximation():
     """Class calculating a rational function approximation
@@ -131,17 +132,25 @@ class RationalApproximation():
         e, v = sp.linalg.eig(A, B)
 
         # First two will be infinity, ignore
-        poly_roots = e[2:]
+        poly_roots = np.sort(e)[:-2]
 
         # Do secant iteration to improve roots
         for i in range(0, len(poly_roots)):
             eps = 1.0e-6
             z0 = poly_roots[i]
             z1 = z0*(1 + eps)
+
             z1 += (eps if z1.real >= 0 else -eps)
 
-            poly_roots[i] = opt.root_scalar(self.evaluate, method='secant',
-                                            x0=z0, x1=z1).root
+            warnings.simplefilter('error', RuntimeWarning)
+            try:
+                poly_roots[i] = opt.root_scalar(self.evaluate,
+                                                method='secant',
+                                                x0=z0, x1=z1).root
+            except:
+                # If a warning occurs, automatically use the initial root
+                pass
+            warnings.simplefilter('default', RuntimeWarning)
 
         return poly_roots
 
@@ -270,7 +279,14 @@ class RationalApproximation():
 
         # Calculate rational approximation from weights
         for i in range(0, len(z)):
-            d = self.weights/(z[i] - mz)
+            #d = self.weights/(z[i] - mz)
+            #n = d*mf
+            #ret[i] = np.sum(n)/np.sum(d)
+
+            d = np.copy(self.weights)
+            sel = np.asarray(self.weights != 0).nonzero()
+            d[sel] = d[sel]/(z[i] - mz[sel])
+
             n = d*mf
             ret[i] = np.sum(n)/np.sum(d)
 
