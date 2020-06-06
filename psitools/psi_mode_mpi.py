@@ -5,12 +5,11 @@
 import time
 import numpy as np
 import collections
-import copy
 from mpi4py import MPI
 from .psi_mode import PSIMode
 from . import taus_gridding
 from . import direct
-  
+
 
 
 class MpiScheduler:
@@ -135,7 +134,6 @@ class MpiScheduler:
         print('Exit rank ', self.rank, flush=True)
 
     def runcompute(self, args):
-        argsb = copy.deepcopy(args)
         if 'random_seed' in args:
             np.random.seed(args.pop('random_seed'))
         else:
@@ -147,40 +145,6 @@ class MpiScheduler:
             self.PSIModeArgs = PSIModeArgs
         roots = self.pm.calculate(**args['calculate'])
 
-        roots = np.array(roots, copy=True)
-   
-        ## Try hunting for roots along the edge
-        #nsub = 40
-        #edges = np.linspace(args['__init__']['real_range'][0], args['__init__']['real_range'][1], nsub+1)
-        #for i in range(0, nsub):
-        #    argsb['__init__']['real_range'] = edges[[i, i+1]]
-        #    argsb['__init__']['imag_range'][1] = edges[i+1] - edges[i]
-        #    #print('argsb', argsb['__init__'])
-        #    pmb = PSIMode(**argsb['__init__'])
-        #    rootsb = pmb.calculate(**argsb['calculate'])
-        #    roots = np.hstack((roots, rootsb))
-
-        if len(roots) == 0:
-            taus = taus_gridding.get_gridding(taus_gridding.gridmap['chebyshevroots'],
-                                       argsb['__init__']['stokes_range'], 2048)
-            ss = direct.StreamingSolver(taus, epstot=argsb['__init__']['dust_to_gas_ratio'],
-                                              beta=-argsb['__init__']['size_distribution_power'])
-            ss.build_system_matrix(Kx=argsb['calculate']['wave_number_x'],
-                                   Kz=argsb['calculate']['wave_number_z'])  
-            ss.solve_eigen()
-            #fastest = ss.get_fastest_growth()
-            fastest = ss.eigenvalues[np.argsort(ss.eigenvalues.imag)[-4:]]
-            print(ss.get_fastest_growth(), 'guesses', fastest)
-            #argsb['__init__']['imag_range'][1] = 4.0*fastest.imag
-            #argsb['__init__']['real_range'] = (fastest.real-0.1, fastest.real+0.1)
-            argsb['__init__']['n_sample'] = 50
-            argsb['calculate']['guess_roots'] = [ss.get_fastest_growth()]
-            pmb = PSIMode(**argsb['__init__'])
-            rootsb = pmb.calculate(**argsb['calculate'])
-            if len(rootsb) > 0:
-                print('found new root ',rootsb)
-            roots = np.hstack((roots, rootsb))
- 
         return roots.copy()
 
 
