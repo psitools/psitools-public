@@ -17,9 +17,10 @@ class MpiScheduler:
     """Execute a set of runs with a list of parameters on MPI tasks.
     """
 
-    def __init__(self, wall_start, wall_limit_total):
+    def __init__(self, wall_start, wall_limit_total, verbose=True):
         """__init__ calls everything, this is execute-on-instantiate
            arglist is a list of dictionaries, giving arguments """
+        self.verbose = verbose
         self.exitFlag = False
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
@@ -60,7 +61,8 @@ class MpiScheduler:
             s = self.comm.probe(source=MPI.ANY_SOURCE, tag=2, status=status)
             finished = self.comm.recv(source=status.source, tag=2)
             if finished[0] == 'finished':
-                print(finished[1], 'result ', finished[2])
+                if self.verbose:
+                    print(finished[1], 'result ', finished[2])
                 finishedruns[finished[1]] = finished[2]
             elif finished[0] == 'running':
                 # add this run to back of queue
@@ -79,15 +81,17 @@ class MpiScheduler:
             elif dest not in waiting:
                 # important not to saed wait twice,
                 # a waiting dest rank just needs an exit
-                print('Rank {:d} commanded to wait'.format(dest), flush=True)
+                if self.verbose:
+                    print('Rank {:d} commanded to wait'.format(dest), flush=True)
                 self.comm.send(['wait'], dest=dest, tag=1)
 
             if (len(am) < 10):
                 print('***Master unassigned list is now ',
                       list(am), flush=True)
             else:
-                print('***Master unassigned list has {:d} entries.\n'.format(
-                      len(am)), flush=True)
+                if self.verbose:
+                    print('***Master unassigned list has {:d} entries.\n'
+                          .format(len(am)), flush=True)
             if len(am) == 0 and len(waiting) == self.nranks-1:
                 exitFlag = True
 
@@ -115,7 +119,8 @@ class MpiScheduler:
             # an assignment or exit from rank==0
             cmd = self.comm.recv(source=0, tag=1)
             if cmd[0] == 'run':
-                print('Rank ', self.rank, ' args ', campaign[cmd[1]])
+                if self.verbose:
+                    print('Rank ', self.rank, ' args ', campaign[cmd[1]])
                 # Try to get away without multiprocessing.
                 # Hopefully the garbage collector will work well enough
                 # p = multiprocessing.Process(target=self.runcompute,
