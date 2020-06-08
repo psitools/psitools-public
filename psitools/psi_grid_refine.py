@@ -44,9 +44,9 @@ def get_if(finishedruns, runkey):
 
 def prune_eps(values, epsilon=1e-5):
     """For a crude pruning of lists of root guesses."""
-    if values == None:
+    if values is None:
         return values
-    if len(values) <= 1:      
+    if len(values) <= 1:
         return values
     uniques = [values[0]]
     for v in values[1:]:
@@ -57,11 +57,13 @@ def prune_eps(values, epsilon=1e-5):
 
 
 class PSIGridRefiner:
-    def __init__(self, batchname, baseargs=None, nbase=(16,16)):
+    def __init__(self, batchname, baseargs=None, nbase=(16, 16)):
         if baseargs:
             self.baseargs = baseargs
         else:
             # Some defaults for testing
+            stokes_range = (1-8, 1e-1)
+            dust_to_gas_ratio = 10.0
             real_range = [-2.0, 2.0]
             imag_range = [1e-8, 1.0]
             self.baseargs = {'__init__': {
@@ -119,10 +121,9 @@ class PSIGridRefiner:
 
         # run the calculations
         finishedruns = self.ms.run(arglist)
-        
+
         # Broadcast to all procs
         finishedruns = self.comm.bcast(finishedruns, root=0)
-
 
         # all procs do this bookeeping
         self.grids.append({'Kx': Kxgrid, 'Kz': Kzgrid,
@@ -131,7 +132,7 @@ class PSIGridRefiner:
         for i in range(0, max_sweep):
             if self.sweep_last_grid() == 0:
                 break
- 
+
     def fill_in_grid(self):
         old = self.grids[-1]
         Kxgrid = spreadgrid(old['Kx'], const_axis=0)
@@ -153,7 +154,7 @@ class PSIGridRefiner:
         for i in range(0, max_sweep):
             if self.sweep_last_grid() == 0:
                 break
-          
+
     def sweep_last_grid(self):
         Kxgrid = self.grids[-1]['Kx']
         Kzgrid = self.grids[-1]['Kz']
@@ -163,7 +164,7 @@ class PSIGridRefiner:
         # Test validity of mapping
         for key in rungrid.ravel():
             get_if(finishedruns, key)
-          
+
         # Now we construct a new run list
         # Loop over the new points
         newrungrid = np.zeros_like(rungrid)
@@ -190,7 +191,7 @@ class PSIGridRefiner:
             if ix < Kxgrid.shape[1]-1 and iz < Kzgrid.shape[0]-1:
                 near_roots += get_if(finishedruns, rungrid[iz+1, ix+1])
             if near_roots:  # implicit booleaness of list
-                near_roots = [near_roots[0]] # take only the first now
+                near_roots = [near_roots[0]]  # take only the first now
                 args = copy.deepcopy(self.baseargs)
                 args['__init__']['max_zoom_domains'] = 1
                 args['calculate']['wave_number_x'] = Kxgrid[iz, ix]
@@ -201,7 +202,7 @@ class PSIGridRefiner:
                 iarg += 1
         if self.rank == 0:
             print('Will run ', iarg, ' new points')
-        
+
         # run the calculations
         newroots = 0
         if iarg > 0:
@@ -217,11 +218,11 @@ class PSIGridRefiner:
             # Test validity of mapping
             for key in rungrid.ravel():
                 get_if(finishedruns, key)
-            # These are not obvious - Python someimtes gives a reference, sometimes a copy
+            # These are not obvious - Python sometimes gives a reference,
+            # sometimes a copy.
             self.grids[-1]['runs'] = rungrid
             self.grids[-1]['results'] = finishedruns
         return newroots
-
 
     def to_hdf5(self):
         if not self.root:
@@ -229,7 +230,7 @@ class PSIGridRefiner:
         print('Writing ', len(self.grids), 'grids to hdf5')
         with h5py.File(self.datafile_hdf5, 'w') as h5f:
             for i, grid in enumerate(self.grids):
-                 
+
                 self.write_grid(i, grid, h5f)
             h5f.close()
 
