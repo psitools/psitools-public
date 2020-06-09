@@ -232,8 +232,9 @@ class PSIGridRefiner:
             return
         print('Writing ', len(self.grids), 'grids to hdf5')
         with h5py.File(self.datafile_hdf5, 'w') as h5f:
+            grp = h5f.create_group(self.batchname)
+            grp.attrs['run_walltime'] = time.time() - self.wall_start
             for i, grid in enumerate(self.grids):
-
                 self.write_grid(i, grid, h5f)
             h5f.close()
 
