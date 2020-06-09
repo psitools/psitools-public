@@ -53,16 +53,17 @@ def prune_eps(values, epsilon=1e-5):
         addme = True
         for vu in uniques:
             if np.abs(v-vu) < epsilon:
-                added = False
+                addme = False
                 break
         if addme:
-           uniques.append(v)
+            uniques.append(v)
 
     return np.array(uniques)
 
 
 class PSIGridRefiner:
-    def __init__(self, batchname, baseargs=None, nbase=(16, 16), verbose=False):
+    def __init__(self, batchname, baseargs=None, nbase=(16, 16),
+                 verbose=False):
         if baseargs:
             self.baseargs = baseargs
         else:
