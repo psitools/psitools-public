@@ -50,9 +50,14 @@ def prune_eps(values, epsilon=1e-5):
         return values
     uniques = [values[0]]
     for v in values[1:]:
+        addme = True
         for vu in uniques:
-            if np.abs(v-vu) > epsilon:
-                uniques.append(v)
+            if np.abs(v-vu) < epsilon:
+                added = False
+                break
+        if addme:
+           uniques.append(v)
+
     return np.array(uniques)
 
 
