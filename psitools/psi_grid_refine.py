@@ -57,7 +57,7 @@ def prune_eps(values, epsilon=1e-5):
 
 
 class PSIGridRefiner:
-    def __init__(self, batchname, baseargs=None, nbase=(16, 16)):
+    def __init__(self, batchname, baseargs=None, nbase=(16, 16), verbose=False):
         if baseargs:
             self.baseargs = baseargs
         else:
@@ -86,6 +86,8 @@ class PSIGridRefiner:
         self.batchname = batchname
         self.datafile_hdf5 = batchname+'.hdf5'
 
+        self.verbose = verbose
+
         self.wall_start = time.time()
         self.wall_limit_total = 70*60*60
 
@@ -97,7 +99,8 @@ class PSIGridRefiner:
             self.root = False
         # get the MPI excecution object
         self.ms = psi_mode_mpi.MpiScheduler(self.wall_start,
-                                            self.wall_limit_total)
+                                            self.wall_limit_total,
+                                            verbose=self.verbose)
         self.grids = []
 
     def run_basegrid(self):
