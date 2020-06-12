@@ -146,6 +146,7 @@ class MpiScheduler:
             print('Exit rank ', self.rank, flush=True)
 
     def runcompute(self, args):
+        """The call to PSIMode."""
         if 'random_seed' in args:
             np.random.seed(args.pop('random_seed'))
         else:
