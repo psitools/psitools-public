@@ -63,7 +63,7 @@ def prune_eps(values, epsilon=1e-5):
 
 class PSIGridRefiner:
     def __init__(self, batchname, baseargs=None, nbase=(16, 16),
-                 verbose=False):
+                 reruns=3, verbose=False):
         if baseargs:
             self.baseargs = baseargs
         else:
@@ -89,6 +89,7 @@ class PSIGridRefiner:
                 'random_seed': 2}
 
         self.nbase = nbase
+        self.reruns = reruns
         self.batchname = batchname
         self.datafile_hdf5 = batchname+'.hdf5'
 
@@ -111,10 +112,12 @@ class PSIGridRefiner:
 
     def run_basegrid(self):
         # Set up the list of runs
-        Kxaxis = np.logspace(-1, 3, self.nbase[1])
-        Kzaxis = np.logspace(-1, 3, self.nbase[0])
+        dK = 4/(self.nbase[1]-3)
+        Kxaxis = np.logspace(-1-dK, 3+dK, self.nbase[1])
+        Kzaxis = np.logspace(-1-dK, 3+dK, self.nbase[0])
         Kzgrid, Kxgrid = np.meshgrid(Kzaxis, Kxaxis, indexing='ij')
         rungrid = np.zeros(Kxgrid.shape, dtype=np.int)
+        nguess = np.zeros(Kxgrid.shape, dtype=np.int)
         rungridflat = rungrid.ravel()
         Ks = list(zip(Kxgrid.ravel(), Kzgrid.ravel()))
         # arglist is a dict of dicts, with dicts for each method call
@@ -136,7 +139,8 @@ class PSIGridRefiner:
 
         # all procs do this bookeeping
         self.grids.append({'Kx': Kxgrid, 'Kz': Kzgrid,
-                           'runs': rungrid, 'results': finishedruns})
+                           'runs': rungrid, 'results': finishedruns,
+                           'nguess': nguess})
         max_sweep = 32
         for i in range(0, max_sweep):
             if self.sweep_last_grid() == 0:
@@ -148,6 +152,7 @@ class PSIGridRefiner:
         Kzgrid = spreadgrid(old['Kz'], const_axis=1)
 
         rungrid = -1*np.ones(Kxgrid.shape, dtype=np.int)
+        nguess = np.zeros(Kxgrid.shape, dtype=np.int)
         # Now we need to insert the old rungrid into the new one
         for iz, Kz in enumerate(Kzgrid[:, 0]):
             if iz % 2 == 0:
@@ -158,7 +163,8 @@ class PSIGridRefiner:
 
         # all procs do this bookeeping
         self.grids.append({'Kx': Kxgrid, 'Kz': Kzgrid,
-                           'runs': rungrid, 'results': finishedruns})
+                           'runs': rungrid, 'results': finishedruns,
+                           'nguess': nguess})
         max_sweep = 32
         for i in range(0, max_sweep):
             if self.sweep_last_grid() == 0:
@@ -168,8 +174,9 @@ class PSIGridRefiner:
         Kxgrid = self.grids[-1]['Kx']
         Kzgrid = self.grids[-1]['Kz']
         rungrid = self.grids[-1]['runs']
+        nguess = self.grids[-1]['nguess']
         finishedruns = self.grids[-1]['results']
-        offset = len(finishedruns)
+        offset = max(finishedruns)
         # Test validity of mapping
         for key in rungrid.ravel():
             get_if(finishedruns, key)
@@ -199,16 +206,28 @@ class PSIGridRefiner:
                 near_roots += get_if(finishedruns, rungrid[iz, ix+1])
             if ix < Kxgrid.shape[1]-1 and iz < Kzgrid.shape[0]-1:
                 near_roots += get_if(finishedruns, rungrid[iz+1, ix+1])
-            if near_roots:  # implicit booleaness of list
-                near_roots = [near_roots[0]]  # take only the first now
+            near_roots = prune_eps(near_roots)
+            foundguesses = len(near_roots)
+            # rerun only is more guesses available
+            if foundguesses > nguess[iz, ix]:
+                nguess[iz, ix] = foundguesses
                 args = copy.deepcopy(self.baseargs)
-                args['__init__']['max_zoom_domains'] = 1
+                args['__init__']['max_zoom_domains'] = 0
                 args['calculate']['wave_number_x'] = Kxgrid[iz, ix]
                 args['calculate']['wave_number_z'] = Kzgrid[iz, ix]
                 args['calculate']['guess_roots'] = prune_eps(near_roots)
                 arglist.append(args)
                 newrungrid[iz, ix] = offset + iarg - rungrid[iz, ix]
+                firstiarg = iarg
                 iarg += 1
+                for ia in range(0, self.reruns):
+                    args = copy.deepcopy(args)
+                    args['random_seed'] += 1
+                    args['is_rerun'] = firstiarg  # can hide a flag here
+                    arglist.append(args)
+                    # don't set rungrid, just append the results to the original run roots
+                    iarg += 1
+
         if self.rank == 0:
             print('Will run ', iarg, ' new points')
 
@@ -217,9 +236,18 @@ class PSIGridRefiner:
         if iarg > 0:
             newfinishedruns = self.ms.run(arglist)
             if self.root:
-                for irun in newfinishedruns:
+                for irun in sorted(newfinishedruns):
+                    # Have to be careful as the dict can enumerate in any order
+                    if 'is_rerun' in arglist[irun]:
+                        if len(finishedruns[offset+arglist[irun]['is_rerun']]) == 0 \
+                           and len(newfinishedruns[irun]) > 0:
+                            print('combined ', finishedruns[offset+arglist[irun]['is_rerun']], newfinishedruns[irun])
+                        finishedruns[offset+arglist[irun]['is_rerun']] = np.append(
+                                               finishedruns[offset+arglist[irun]['is_rerun']],
+                                                                         newfinishedruns[irun])
+                    else: 
+                        finishedruns[offset+irun] = newfinishedruns[irun]
                     newroots += len(newfinishedruns[irun])
-                    finishedruns[offset+irun] = newfinishedruns[irun]
             rungrid += newrungrid
             # Broadcast to all procs
             newroots = self.comm.bcast(newroots, root=0)
