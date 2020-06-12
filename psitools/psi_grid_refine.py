@@ -225,13 +225,14 @@ class PSIGridRefiner:
                     args['random_seed'] += 1
                     args['is_rerun'] = firstiarg  # can hide a flag here
                     arglist.append(args)
-                    # don't set rungrid, just append the results to the original run roots
+                    # Don't set rungrid,
+                    # just append the results to the original run roots.
                     iarg += 1
 
         if self.rank == 0:
             print('Will run ', iarg, ' new points')
 
-        # run the calculations
+        # Run the calculations
         newroots = 0
         if iarg > 0:
             newfinishedruns = self.ms.run(arglist)
@@ -239,13 +240,17 @@ class PSIGridRefiner:
                 for irun in sorted(newfinishedruns):
                     # Have to be careful as the dict can enumerate in any order
                     if 'is_rerun' in arglist[irun]:
-                        if len(finishedruns[offset+arglist[irun]['is_rerun']]) == 0 \
+                        if len(finishedruns[offset+arglist[irun]['is_rerun']])\
+                                                                         == 0 \
                            and len(newfinishedruns[irun]) > 0:
-                            print('combined ', finishedruns[offset+arglist[irun]['is_rerun']], newfinishedruns[irun])
-                        finishedruns[offset+arglist[irun]['is_rerun']] = np.append(
-                                               finishedruns[offset+arglist[irun]['is_rerun']],
-                                                                         newfinishedruns[irun])
-                    else: 
+                            print('combined ',
+                                finishedruns[offset+arglist[irun]['is_rerun']],
+                                newfinishedruns[irun])
+                        finishedruns[offset+arglist[irun]['is_rerun']] = \
+                            np.append(
+                                finishedruns[offset+arglist[irun]['is_rerun']],
+                                newfinishedruns[irun])
+                    else:
                         finishedruns[offset+irun] = newfinishedruns[irun]
                     newroots += len(newfinishedruns[irun])
             rungrid += newrungrid

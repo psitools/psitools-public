@@ -7,9 +7,6 @@ import numpy as np
 import collections
 from mpi4py import MPI
 from .psi_mode import PSIMode
-from . import taus_gridding
-from . import direct
-
 
 
 class MpiScheduler:
@@ -83,7 +80,8 @@ class MpiScheduler:
                 # important not to saed wait twice,
                 # a waiting dest rank just needs an exit
                 if self.verbose:
-                    print('Rank {:d} commanded to wait'.format(dest), flush=True)
+                    print('Rank {:d} commanded to wait'.format(dest),
+                          flush=True)
                 self.comm.send(['wait'], dest=dest, tag=1)
 
             if (len(am) < 10 and not emptyflag):
