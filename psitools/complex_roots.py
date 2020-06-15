@@ -7,6 +7,13 @@ import scipy.optimize as opt
 import warnings
 
 
+def unique_within_tol(a, tol=1e-12):
+    b = a.copy()
+    b.sort()
+    d = np.append(True, np.diff(b))
+    return b[d > tol]
+
+
 class RationalApproximation():
     """Class calculating a rational function approximation
        given a set of samples.
@@ -130,58 +137,64 @@ class RationalApproximation():
         while self.cleanup() != 0:
             n_cleanup += 1
 
-    def find_zeros(self):
+    def find_zeros(self, method='arrowhead', secant_improve=True):
         """Find zeros of rational approximation"""
+
+        # Compress to nodes used
         mf = np.ma.masked_array(self.f, mask=1-self.maskF).compressed()
         mz = np.ma.masked_array(self.z, mask=1-self.maskF).compressed()
 
-        # Construct arrowhead matrix A
-        d = np.insert(mz, 0, 0)
-        A = np.diag(d)
-        A[0, 1:] = self.weights*mf
-        A[1:, 0] = np.ones(len(mz))
+        if method == 'arrowhead':
+            # Construct arrowhead matrix A
+            d = np.insert(mz, 0, 0)
+            A = np.diag(d)
+            A[0, 1:] = self.weights*mf
+            A[1:, 0] = np.ones(len(mz))
 
-        B = np.diag(np.insert(np.ones(len(mz)), 0, 0))
+            B = np.diag(np.insert(np.ones(len(mz)), 0, 0))
 
-        # Generalized eigenvalue problem
-        e, v = sp.linalg.eig(A, B)
+            # Generalized eigenvalue problem
+            e, v = sp.linalg.eig(A, B)
 
-        # First two will be infinity, ignore
-        poly_roots = np.sort(e)[:-2]
+            # First two will be infinity, ignore
+            poly_roots = np.sort(e)[:-2]
 
-        # Do secant iteration to improve roots
-        for i in range(0, len(poly_roots)):
-            eps = 1.0e-6
-            z0 = poly_roots[i]
-            z1 = z0*(1 + eps)
+        if method == 'polyroots':
+            sf = self.weights*mf
+            c = np.zeros(np.shape(sf), dtype=np.complex128)
 
-            z1 += (eps if z1.real >= 0 else -eps)
+            for i in range(0, len(mf)):
+                roots_l = np.concatenate((mz[:i], mz[i+1:]))
+                bj = np.polynomial.polynomial.polyfromroots(roots_l)
+                c = c + sf[i]*bj
 
-            warnings.simplefilter('error', RuntimeWarning)
-            try:
-                poly_roots[i] = opt.root_scalar(self.evaluate,
-                                                method='secant',
-                                                x0=z0, x1=z1).root
-            except:
-                # If a warning occurs, automatically use the initial root
-                pass
-            warnings.simplefilter('default', RuntimeWarning)
+            poly_roots = np.polynomial.polynomial.polyroots(c)
+
+        if secant_improve == True:
+            # Do secant iteration to improve roots
+            for i in range(0, len(poly_roots)):
+                eps = 1.0e-4
+                z0 = poly_roots[i]
+                z1 = z0*(1 + eps)
+
+                z1 += (eps if z1.real >= 0 else -eps)
+
+                warnings.simplefilter('error', RuntimeWarning)
+                try:
+                    poly_roots[i] = opt.root_scalar(self.evaluate,
+                                                    method='secant',
+                                                    x0=z0, x1=z1).root
+                except:
+                    # If a warning occurs, automatically use the initial root
+                    pass
+                warnings.simplefilter('default', RuntimeWarning)
+
+            # Different starting roots may end up on the same end root,
+            # resulting in multiple equivalent roots. Return only unique roots.
+            poly_roots = unique_within_tol(poly_roots)
 
         return poly_roots
 
-        ## # Compress to nodes used
-        ## mf = np.ma.masked_array(self.f, mask=1-self.maskF).compressed()
-        ## mz = np.ma.masked_array(self.z, mask=1-self.maskF).compressed()
-
-        ## sf = self.weights*mf
-        ## c = np.zeros(np.shape(sf), dtype=np.complex128)
-
-        ## for i in range(0, len(mf)):
-        ##     roots_l = np.concatenate((mz[:i], mz[i+1:]))
-        ##     bj = np.polynomial.polynomial.polyfromroots(roots_l)
-        ##     c = c + sf[i]*bj
-
-        ## return np.polynomial.polynomial.polyroots(c)
 
     def find_poles(self):
         """Find poles of rational approximation"""

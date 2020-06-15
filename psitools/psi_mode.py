@@ -58,7 +58,8 @@ class PSIMode():
         # Create rectangular domain
         self.domain = cr.Rectangle(real_range, imag_range)
         self.n_sample = n_sample
-        self.max_zoom_domains = max_zoom_domains
+        self.max_zoom_level = max_zoom_domains
+        self.max_zoom_domains_per_level = 4
         self.max_secant_iterations = max_secant_iterations
 
         self.verbose_flag = verbose_flag
@@ -97,14 +98,13 @@ class PSIMode():
         for centre in guess_roots:
 #            self.add_extra_domain(extra_domain_size=[0.001, 0.001],
 #                                  centre=centre)
-           # If the domain is too small it is hard to track the 1e-6 
+           # If the domain is too small it is hard to track the 1e-6
            # growth of secular modes near the axis.
            domain_size = min((1e-3, np.abs(centre.imag)*4))
            self.add_extra_domain(extra_domain_size=[domain_size, domain_size],
                                   centre=centre)
 
-
-        for n in range(0, self.max_zoom_domains + 1):
+        for n in range(0, self.max_zoom_level + 1):
             # Calculate rational approximation
             self.ra.calculate(self.f_sample, self.z_sample)
 
@@ -122,9 +122,6 @@ class PSIMode():
             old_clean_tol = self.ra.clean_tol
             while (np.sum(self.ra.maskF) < min_nodes or
                    (len(zeros) == 0 and self.force_at_least_one_root == True)):
-                #warnings.warn(('Number of nodes too small or '
-                #               'no zeros in domain: '
-                #               'reducing clean_tol'))
                 self.ra.clean_tol = 0.5*self.ra.clean_tol
 
                 # Stop if too small, nothing to be done at this point
@@ -153,34 +150,59 @@ class PSIMode():
             sel = np.asarray((np.imag(zeros) < self.domain.ymax) &
                              (np.real(zeros) < self.domain.xmax) &
                              (np.real(zeros) > self.domain.xmin)).nonzero()
-            zoom_roots = zeros[sel]
+            pot_zoom_roots = zeros[sel]
 
-            if len(zoom_roots > 0):
+            # Size of zoom domain in x (= real part)
+            zoom_domain_size_x = np.power(10.0, -1 - 0.5*n)
+
+            if len(pot_zoom_roots) > 0:
+                # Sort according to imaginary part
+                pot_zoom_roots = \
+                  pot_zoom_roots[np.argsort(np.imag(pot_zoom_roots))]
+
+                zoom_roots = [pot_zoom_roots[-1]]
+                for i in range(1, len(pot_zoom_roots)):
+                    z = pot_zoom_roots[-1-i]
+                    add_flag = True
+                    for j in range(0, len(zoom_roots)):
+                        if (np.abs(np.real(z) - np.real(zoom_roots[j])) <
+                            zoom_domain_size_x):
+                            add_flag = False
+                    if add_flag == True:
+                        zoom_roots.append(z)
+
+                # Limit number of domains to add every level
+                zoom_roots = zoom_roots[:self.max_zoom_domains_per_level]
+
                 # Start secant iteration from this root if no growing roots
-                maximum_growing_zero = zoom_roots[zoom_roots.imag.argmax()]
-                # Select roots that are *almost* growing as zoom sites
-                #sel = np.asarray(np.imag(zoom_roots) > -0.01)
-                sel = np.asarray(np.imag(zoom_roots) >
-                                 -2*np.abs(np.imag(maximum_growing_zero)))
-                zoom_roots = zoom_roots[sel]
+                maximum_growing_zero = zoom_roots[0]
 
-                # Make sure we always have a zoom domain
-                if len(zoom_roots) == 0:
-                    zoom_roots = np.asarray([maximum_growing_zero])
+                ## # Start secant iteration from this root if no growing roots
+                ## maximum_growing_zero = zoom_roots[zoom_roots.imag.argmax()]
+                ## # Select roots that are *almost* growing as zoom sites
+                ## sel = np.asarray(np.imag(zoom_roots) >
+                ##                  -2*np.abs(np.imag(maximum_growing_zero)))
+                ## zoom_roots = zoom_roots[sel]
 
-                if (n > 0 and
-                    len(zoom_roots) > 1):
-                    # Sort according to imaginary part
-                    zoom_roots = zoom_roots[np.argsort(np.imag(zoom_roots))]
-                    n_zoom = np.sum(np.asarray(zoom_roots.imag > 0))
-                    if (n_zoom > 0 and
-                        n_zoom < len(zoom_roots) - 1):
-                        zoom_roots = zoom_roots[(-n_zoom-1):]
+                ## # Make sure we always have a zoom domain
+                ## if len(zoom_roots) == 0:
+                ##     zoom_roots = np.asarray([maximum_growing_zero])
+
+                ## # If a growing mode is found, only zoom in on growing mode
+                ## if (n > 0 and
+                ##     len(zoom_roots) > 1):
+                ##     # Sort according to imaginary part
+                ##     zoom_roots = zoom_roots[np.argsort(np.imag(zoom_roots))]
+                ##     n_zoom = np.sum(np.asarray(zoom_roots.imag > 0))
+                ##     if (n_zoom > 0 and
+                ##         n_zoom < len(zoom_roots) - 1):
+                ##         zoom_roots = zoom_roots[(-n_zoom-1):]
 
 
             else:
                 # Nothing to zoom into or to start searching from
                 maximum_growing_zero = None
+                zoom_roots = pot_zoom_roots
 
             # Look at zeros inside domain
             sel = np.asarray(self.domain.is_in(zeros)).nonzero()
@@ -193,7 +215,7 @@ class PSIMode():
 
             max_iter = self.max_secant_iterations
             # If we can still zoom, limit iterations
-            if n < self.max_zoom_domains:
+            if n < self.max_zoom_level:
                 max_iter = self.n_sample
             # If no zeros in domain, start from least damped root
             if (len(zeros) == 0 and
@@ -206,18 +228,16 @@ class PSIMode():
 
             # Quit if a root found or no more zoom levels or sites
             if (len(ret) > 0 or
-                n == self.max_zoom_domains or
+                n == self.max_zoom_level or
                 len(zoom_roots) == 0):
                 return ret
 
             # Not root found: add zoom domains
             for zoom_centre in zoom_roots:
-                # Reduce x size for higher zoom levels
-                sx = np.power(10.0, -1-n)
                 # Limit y size to imaginary part of centre
                 sy = np.min([0.1, np.abs(np.imag(zoom_centre))])
 
-                sz = [sx, sy]
+                sz = [zoom_domain_size_x, sy]
                 self.add_extra_domain(extra_domain_size=sz,
                                       centre=zoom_centre)
 
@@ -244,7 +264,7 @@ class PSIMode():
     def add_extra_domain(self, extra_domain_size=[0.1, 0.1], centre=0.0):
         """Add extra sample points in domain close to real axis"""
 
-        original_centre = centre
+        #original_centre = centre
 
         # Make sure whole zoom domain is inside original domain
         if np.real(centre) < self.domain.xmin + 0.5*extra_domain_size[0]:
@@ -276,8 +296,8 @@ class PSIMode():
         extra_z_sample = \
           extra_domain.generate_random_sample_points(extra_n_sample)
 
-        if extra_domain.is_in(original_centre):
-            extra_z_sample[0] = original_centre
+        #if extra_domain.is_in(original_centre):
+        #    extra_z_sample[0] = original_centre
 
         extra_f_sample = self.disp(extra_z_sample)
 
