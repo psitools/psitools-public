@@ -96,7 +96,12 @@ class PSIMode():
 
         # Put zoom domain around guessed roots
         for centre in guess_roots:
-            self.add_extra_domain(extra_domain_size=[0.001, 0.001],
+#            self.add_extra_domain(extra_domain_size=[0.001, 0.001],
+#                                  centre=centre)
+           # If the domain is too small it is hard to track the 1e-6
+           # growth of secular modes near the axis.
+           domain_size = min((1e-3, np.abs(centre.imag)*4))
+           self.add_extra_domain(extra_domain_size=[domain_size, domain_size],
                                   centre=centre)
 
         for n in range(0, self.max_zoom_level + 1):

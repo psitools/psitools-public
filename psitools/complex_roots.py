@@ -6,11 +6,13 @@ import scipy.optimize as opt
 
 import warnings
 
+
 def unique_within_tol(a, tol=1e-12):
     b = a.copy()
     b.sort()
     d = np.append(True, np.diff(b))
     return b[d > tol]
+
 
 class RationalApproximation():
     """Class calculating a rational function approximation
@@ -76,15 +78,29 @@ class RationalApproximation():
 
     def step(self):
         """Select a new node and calculate weights."""
+        try:
+            # Mask point with highest residual
+            i = np.argmax(self.R)
+            # Need i-th element where maskF=0
+            counts = np.cumsum(1 - self.maskF)
+            i = np.searchsorted(counts, i + 1)
+            self.maskF[i] = 1
+            residuals = self.calc_weights_residuals()
+        except np.linalg.LinAlgError as err:
+            warnings.warn("LinAlgError occured in RationalApproximation." +
+                          + "calc_weights_residuals: " + str(err))
+            # Unset maskF as point was not used
+            self.maskF[i] = 0
+            # Mask point with second-highest residual
+            i = np.argsort(self.R)[-2]
+            # Need i-th element where maskF=0
+            counts = np.cumsum(1 - self.maskF)
+            i = np.searchsorted(counts, i + 1)
+            self.maskF[i] = 1
 
-        # Mask point with highest residual
-        i = np.argmax(self.R)
-        # Need i-th element where maskF=0
-        counts = np.cumsum(1 - self.maskF)
-        i = np.searchsorted(counts, i + 1)
-        self.maskF[i] = 1
+            residuals = self.calc_weights_residuals()
 
-        return self.calc_weights_residuals()
+        return residuals
 
     def calculate(self, F, Z):
         """Calculate rational approximation to given tolerance
