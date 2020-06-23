@@ -307,6 +307,9 @@ class PSIGridRefiner:
             self.baseargs['__init__']['stokes_range']
         grp.attrs['dust_to_gas_ratio'] = \
             self.baseargs['__init__']['dust_to_gas_ratio']
+        if 'viscous_alpha' in self.baseargs['calculate']:
+            grp.attrs['viscous_alpha'] = \
+                self.baseargs['calculate']['viscous_alpha']
         grp.attrs['real_range'] = self.baseargs['__init__']['real_range']
         grp.attrs['imag_range'] = self.baseargs['__init__']['imag_range']
         dset = grp.create_dataset('Kxgrid', data=Kxgridout)
