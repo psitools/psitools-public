@@ -112,6 +112,15 @@ class RationalApproximation():
             Z: Sample points
         """
 
+        # Check if F and Z have same shape
+        if np.shape(F) != np.shape(Z):
+            raise TypeError('Function samples and sample points need '
+                            'to have the same shape')
+
+        # Check F and Z are finite
+        if np.isfinite(np.sum(F) + np.sum(Z)) is False:
+            raise ValueError('Nan or Inf in sample points or function samples')
+
         self.F = F        # Function samples
         self.Z = Z        # Sample points
         self.M = len(F)   # Number of sample points
@@ -139,6 +148,14 @@ class RationalApproximation():
         while self.cleanup() != 0:
             n_cleanup += 1
 
+        # Maximum residual relative to F
+        max_res = np.max(self.R)/np.max(np.abs(self.F))
+
+        number_of_nodes_used = np.sum(self.maskF)
+
+        return {"n_nodes" : number_of_nodes_used,
+                "max_residual" : max_res}
+
     def find_zeros(self, method='arrowhead', secant_improve=True):
         """Find zeros of rational approximation"""
 
@@ -159,7 +176,7 @@ class RationalApproximation():
             e, v = sp.linalg.eig(A, B)
 
             # First two will be infinity, ignore
-            poly_roots = np.sort(e)[:-2]
+            poly_roots = np.atleast_1d(np.sort(e)[:-2])
 
         if method == 'polyroots':
             sf = self.weights*mf
@@ -170,7 +187,12 @@ class RationalApproximation():
                 bj = np.polynomial.polynomial.polyfromroots(roots_l)
                 c = c + sf[i]*bj
 
-            poly_roots = np.polynomial.polynomial.polyroots(c)
+            poly_roots = np.atleast_1d(np.polynomial.polynomial.polyroots(c))
+
+        # Sanity check: number of roots should be the number of nodes used
+        if len(poly_roots) != len(self.weights) - 1:
+            raise RuntimeError('Number of roots of rational approximation '
+                               'not equal to number of nodes used')
 
         if secant_improve == True:
             # Do secant iteration to improve roots
@@ -193,7 +215,8 @@ class RationalApproximation():
 
             # Different starting roots may end up on the same end root,
             # resulting in multiple equivalent roots. Return only unique roots.
-            poly_roots = unique_within_tol(poly_roots)
+            if len(poly_roots) > 1:
+                poly_roots = unique_within_tol(poly_roots)
 
         return poly_roots
 
