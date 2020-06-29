@@ -118,7 +118,7 @@ class RationalApproximation():
                             'to have the same shape')
 
         # Check F and Z are finite
-        if np.isfinite(np.sum(F) + np.sum(Z)) is False:
+        if np.isfinite(np.sum(F) + np.sum(Z)) == False:
             raise ValueError('Nan or Inf in sample points or function samples')
 
         self.F = F        # Function samples
