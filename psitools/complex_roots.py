@@ -8,6 +8,8 @@ import warnings
 
 
 def unique_within_tol(a, tol=1e-12):
+    if a.size == 0:
+        return a
     b = a.copy()
     b.sort()
     d = np.append(True, np.diff(b))
