@@ -106,10 +106,27 @@ class PSIMode():
 
         for n in range(0, self.max_zoom_level + 1):
             # Calculate rational approximation
-            self.ra.calculate(self.f_sample, self.z_sample)
+            try:
+                self.ra.calculate(self.f_sample, self.z_sample)
+            except:
+                print(('Rational approximation failed at Kx = {}, Kz = {}, '
+                      'alpha = {}, guess_roots = {}').format(wave_number_x,
+                                                             wave_number_z,
+                                                             viscous_alpha,
+                                                             guess_roots))
+                raise
 
             # Find the zeros of the rational approximation.
-            zeros = self.ra.find_zeros()
+            try:
+                zeros = self.ra.find_zeros()
+            except:
+                print(('Roots of RA failed at Kx = {}, Kz = {}, '
+                      'alpha = {}, guess_roots = {}').format(wave_number_x,
+                                                             wave_number_z,
+                                                             viscous_alpha,
+                                                             guess_roots))
+                raise
+
             sel = np.asarray(self.domain.is_in(zeros)).nonzero()
             zeros = zeros[sel]
 
@@ -130,10 +147,29 @@ class PSIMode():
 
                 self.log_print('Reducing clean_tol to '
                                '{}'.format(self.ra.clean_tol))
-                self.ra.calculate(self.f_sample, self.z_sample)
+
+                # Calculate new rational approximation
+                try:
+                    self.ra.calculate(self.f_sample, self.z_sample)
+                except:
+                    print(('Rational approximation failed at Kx = {}, Kz = {}, '
+                           'alpha = {}, guess_roots = {}').format(wave_number_x,
+                                                                  wave_number_z,
+                                                                  viscous_alpha,
+                                                                  guess_roots))
+                    raise
 
                 # Find the zeros of the rational approximation.
-                zeros = self.ra.find_zeros()
+                try:
+                    zeros = self.ra.find_zeros()
+                except:
+                    print(('Roots of RA failed at Kx = {}, Kz = {}, '
+                           'alpha = {}, guess_roots = {}').format(wave_number_x,
+                                                                  wave_number_z,
+                                                                  viscous_alpha,
+                                                                  guess_roots))
+                    raise
+
                 sel = np.asarray(self.domain.is_in(zeros)).nonzero()
                 zeros = zeros[sel]
 
@@ -143,7 +179,16 @@ class PSIMode():
             self.log_print('Number of nodes used: {}'.format(n_nodes))
 
             # Find the zeros of the rational approximation.
-            zeros = self.ra.find_zeros()
+            try:
+                zeros = self.ra.find_zeros()
+            except:
+                print(('Roots of RA failed at Kx = {}, Kz = {}, '
+                      'alpha = {}, guess_roots = {}').format(wave_number_x,
+                                                             wave_number_z,
+                                                             viscous_alpha,
+                                                             guess_roots))
+                raise
+
             self.log_print('All zeros: {}'.format(zeros))
 
             # Select roots to zoom into potentially
