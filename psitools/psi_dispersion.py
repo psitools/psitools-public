@@ -65,6 +65,9 @@ class PSIDispersion():
                          epsabs=self.quad_epsabs,
                          epsrel=self.quad_epsrel)
 
+        # Original result summed over subintervals
+        res = np.sum(info['rlist'][0:info['last']])
+
         # Select subintervals that have an error that is too large
         sel = np.asarray(info['elist'][0:info['last']] >
                          self.quad_epsabs).nonzero()
@@ -357,14 +360,19 @@ class PSIDispersion():
         for i in range(0, len(w)):
             # Identify the pole (can there be 2???)
             f = lambda x: np.real(w[i]) - self.kx*self.ux(x)
+
             # List of poles from size density; may be empty
             self.poles = list(self.size_density.poles)
             if (f(self.taumin)*f(self.taumax) < 0.0):
-                res = opt.fsolve(f, x0=1.5*self.taumin + 0.5*self.taumax)
+                res = opt.fsolve(f, x0=1.5*self.taumin + 0.5*self.taumax,
+                                 xtol=1.49e-11)
                 if res[0] > self.taumin:
                     self.poles.append(res[0])
-            for p in self.poles:
-                p = p/self.taumax
+
+            #for p in self.poles:
+            #    p = p/self.taumax
+            for j in range(0, len(self.poles)):
+                self.poles[j] /= self.taumax
 
             M = self.matrix_M(w[i])
             P = self.matrix_P(w[i])
