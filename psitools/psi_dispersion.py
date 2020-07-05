@@ -7,6 +7,7 @@ import scipy.optimize as opt
 import warnings
 
 from .sizedensity import SizeDensity
+from .tanhsinh import TanhSinh
 
 class PSIDispersion():
     """Class holding the full PSI dispersion relation.
@@ -27,7 +28,8 @@ class PSIDispersion():
                  sound_speed_over_eta=1/0.05,
                  size_distribution_power=3.5,
                  single_size_flag=False,
-                 size_density=None):
+                 size_density=None,
+                 tanhsinh_integrator=None):
         self.mu = dust_to_gas_ratio
         self.taumin = stokes_range[0]
         self.taumax = stokes_range[1]
@@ -41,6 +43,8 @@ class PSIDispersion():
             self.size_density = SizeDensity(sigma, stokes_range)
 
         self.poles = self.size_density.poles
+
+        self.tanhsinh_integrator = tanhsinh_integrator
 
         # Error tolerances in calls to quadpack
         self.quad_epsrel = 1.49e-12
@@ -110,11 +114,28 @@ class PSIDispersion():
 
         # Sigma(s) = amax*sigma(amax*s)/rho_d
         Sigma = lambda x: self.size_density(x)
-        fR = lambda u: np.real(g(t*np.exp(u)))*np.exp(u)*Sigma(np.exp(u))
-        fI = lambda u: np.imag(g(t*np.exp(u)))*np.exp(u)*Sigma(np.exp(u))
         a = np.log(s_min)
         b = 0
         poles = np.log(self.poles)
+
+        if self.tanhsinh_integrator is not None:
+            f = lambda u: g(t*np.exp(u))*np.exp(u)*Sigma(np.exp(u))
+
+            if len(poles) == 0:
+                ret = self.tanhsinh_integrator.integrate(f, a, b)
+            else:
+                a_list = np.concatenate((np.asarray([a]),poles))
+                b_list = np.concatenate((poles, np.asarray([b])))
+
+                ret = 0.0
+                for aa, bb in zip(a_list, b_list):
+                    ret += self.tanhsinh_integrator.integrate(f, aa, bb)
+
+            return self.mu*ret
+
+        # Not using tanh-sinh, use quadpack
+        fR = lambda u: np.real(g(t*np.exp(u)))*np.exp(u)*Sigma(np.exp(u))
+        fI = lambda u: np.imag(g(t*np.exp(u)))*np.exp(u)*Sigma(np.exp(u))
 
         # Make warnings errors that we can catch
         warnings.simplefilter('error', integrate.IntegrationWarning)
