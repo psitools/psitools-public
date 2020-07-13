@@ -295,7 +295,7 @@ class PSIMode():
         if (self.verbose_flag == True):
             print(arg)
 
-    def find_dispersion_roots(self, zeros, max_iter):
+    def find_dispersion_roots(self, zeros, max_iter, select_insode_domain=True):
         # zeros = roots of rational approximation.
         zeros = np.atleast_1d(zeros)
         for i in range(0, len(zeros)):
@@ -304,9 +304,12 @@ class PSIMode():
             # Secant iteration starting either from approximate zero or minimum
             zeros[i] = self.find_root(zeros[i], max_iter=max_iter)
 
-        # Return only zeros inside domain
-        sel = np.asarray(self.domain.is_in(zeros)).nonzero()
-        return zeros[sel]
+        if select_inside_domain == True:
+            # Return only zeros inside domain
+            sel = np.asarray(self.domain.is_in(zeros)).nonzero()
+            return zeros[sel]
+
+        return zeros
 
     def add_extra_domain(self, extra_domain_size=[0.1, 0.1], centre=0.0):
         """Add extra sample points in domain close to real axis"""
