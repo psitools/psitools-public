@@ -70,6 +70,8 @@ class PSIMode():
         self.minimum_interpolation_nodes = 4
         self.force_at_least_one_root = True
 
+        self.n_function_call = 0
+
         # AAA rational approximation
         self.ra = cr.RationalApproximation(self.domain,
                                            tol=tol,
@@ -297,7 +299,8 @@ class PSIMode():
 
     def find_dispersion_roots(self, zeros, max_iter, select_inside_domain=True):
         # zeros = roots of rational approximation.
-        zeros = np.atleast_1d(zeros)
+        zeros = np.ravel(np.atleast_1d(zeros))
+
         for i in range(0, len(zeros)):
             self.log_print('Starting iteration at z = {}'.format(zeros[i]))
 
