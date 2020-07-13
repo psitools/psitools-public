@@ -297,9 +297,9 @@ class PSIMode():
         if (self.verbose_flag == True):
             print(arg)
 
-    def find_dispersion_roots(self, zeros, max_iter, select_inside_domain=True):
+    def find_dispersion_roots(self, zeros, max_iter):
         # zeros = roots of rational approximation.
-        zeros = np.ravel(np.atleast_1d(zeros))
+        zeros = np.atleast_1d(zeros)
 
         for i in range(0, len(zeros)):
             self.log_print('Starting iteration at z = {}'.format(zeros[i]))
@@ -307,12 +307,9 @@ class PSIMode():
             # Secant iteration starting either from approximate zero or minimum
             zeros[i] = self.find_root(zeros[i], max_iter=max_iter)
 
-        if select_inside_domain == True:
-            # Return only zeros inside domain
-            sel = np.asarray(self.domain.is_in(zeros)).nonzero()
-            return zeros[sel]
-
-        return zeros
+        # Return only zeros inside domain
+        sel = np.asarray(self.domain.is_in(zeros)).nonzero()
+        return zeros[sel]
 
     def add_extra_domain(self, extra_domain_size=[0.1, 0.1], centre=0.0):
         """Add extra sample points in domain close to real axis"""
@@ -371,52 +368,80 @@ class PSIMode():
 
         return ret.x[0] + 1j*ret.x[1]
 
-    def find_root(self, w0, max_iter=1000):
+    def find_root(self, w0, max_iter=1000, select_inside_domain=True,
+                  initial_iterations=5):
         """Find a root of the dispersion relation, starting from initial guess w0"""
-        # Secant method needs second point.
-        # There appears to be a bug in scipy in automatically adding x1 for
-        # complex x0.
-        eps = 1.0e-6
-        w1 = w0 * (1 + eps)
-        w1 += (eps if w1.real >= 0 else -eps)
 
-        # Experiment: do a maximum of 5 iterations
-        # Check if solution runs away from initial point
-        # If not, continue for as long as it takes
-        z = opt.root_scalar(self.disp, method='secant',
-                            x0=w0, x1=w1,
-                            maxiter=5)
-        self.n_function_call += z.function_calls
-        self.log_print("Result after 5 iterations:")
-        self.log_print(z)
-        self.log_print("|z - z0|/|z0| = {}".format(np.abs(z.root - w0)/np.abs(w0)))
+        # Make sure we can handle both vector and scalar w0
+        w0 = np.asarray(w0)
+        scalar_input = False
+        if w0.ndim == 0:
+            w0 = w0[None]  # Makes w 1D
+            scalar_input = True
+        else:
+            original_shape = np.shape(w0)
+            w0 = np.ravel(w0)
 
-        if (z.converged == False and
-            np.abs(z.root - w0)/np.abs(w0) < 1 and
-            max_iter > 5):
-            self.log_print("Starting further iteration")
+        ret = 0*w0
 
-            # Start where we left off, again need second point
-            w0 = z.root
-            w1 = w0 * (1 + eps)
+        for i in range(0, len(w0)):
+            # Secant method needs second point.
+            # There appears to be a bug in scipy in automatically adding x1 for
+            # complex x0.
+            eps = 1.0e-6
+            w1 = w0[i] * (1 + eps)
             w1 += (eps if w1.real >= 0 else -eps)
 
+            # Experiment: do a maximum of 5 iterations
+            # Check if solution runs away from initial point
+            # If not, continue for as long as it takes
             z = opt.root_scalar(self.disp, method='secant',
-                                x0=w0, x1=w1,
-                                maxiter=max_iter)
+                                x0=w0[i], x1=w1,
+                                maxiter=5)
             self.n_function_call += z.function_calls
+            self.log_print("Result after 5 iterations:")
             self.log_print(z)
-        else:
-            if (z.converged == False):
-                self.log_print("Secant is running away; no further iterations")
+            self.log_print("|z - z0|/|z0| = {}".format(np.abs(z.root - w0[i])/np.abs(w0[i])))
 
-        if (z.converged == True and
-            self.domain.is_in(z.root) == True):
-            self.max_convergence_iterations = \
-              np.max([self.max_convergence_iterations, z.iterations])
-            return z.root
-        # Return value that will be deselected (TODO)
-        return -1j
+            if (z.converged == False and
+                np.abs(z.root - w0[i])/np.abs(w0[i]) < 1 and
+                max_iter > 5):
+                self.log_print("Starting further iteration")
+
+                # Start where we left off, again need second point
+                w0[i] = z.root
+                w1 = w0[i] * (1 + eps)
+                w1 += (eps if w1.real >= 0 else -eps)
+
+                z = opt.root_scalar(self.disp, method='secant',
+                                    x0=w0[i], x1=w1,
+                                    maxiter=max_iter)
+                self.n_function_call += z.function_calls
+                self.log_print(z)
+            else:
+                if (z.converged == False):
+                    self.log_print("Secant is running away; no further iterations")
+
+            root_is_in_domain = ((self.domain.is_in(z.root) == True) or
+                                 (select_inside_domain == False))
+
+            #if (z.converged == True and
+            #    self.domain.is_in(z.root) == True):
+            if (z.converged == True and
+                root_is_in_domain == True):
+                self.max_convergence_iterations = \
+                  np.max([self.max_convergence_iterations, z.iterations])
+                #return z.root
+                ret[i] = z.root
+            else:
+                ret[i] = -1j
+            # Return value that will be deselected (TODO)
+            #return -1j
+
+        # Return value of original shape
+        if scalar_input:
+            return np.squeeze(ret)
+        return np.reshape(ret, original_shape)
 
     def plot_dispersion(self, wave_number_x, wave_number_z,
                         viscous_alpha=0,
