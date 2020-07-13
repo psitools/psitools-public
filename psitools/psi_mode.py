@@ -295,7 +295,7 @@ class PSIMode():
         if (self.verbose_flag == True):
             print(arg)
 
-    def find_dispersion_roots(self, zeros, max_iter, select_insode_domain=True):
+    def find_dispersion_roots(self, zeros, max_iter, select_inside_domain=True):
         # zeros = roots of rational approximation.
         zeros = np.atleast_1d(zeros)
         for i in range(0, len(zeros)):
