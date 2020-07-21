@@ -494,3 +494,104 @@ class RootFollower():
             ret[idx] = z.root
 
         return ret
+
+class ClosedPath():
+    def __init__(self, f, z_list):
+        self.func = f
+        self.points = np.asarray(z_list)
+        self.f_points = self.func(z_list)
+
+    def sum_angles(self):
+        """Sum over argument ratio, should equal number of enclosed roots"""
+
+        # Try and avoid division by zero
+        f = self.f_points + 1.0e-30*1j
+        return 0.5*np.sum(np.angle(np.roll(f, -1)/f))/np.pi
+
+    def interweave(self, a, b):
+        """Interweave two arrays a and b, starting with a[0]"""
+        c = np.empty((a.size + b.size,), dtype=a.dtype)
+        c[0::2] = a
+        c[1::2] = b
+
+        return c
+
+    def refine(self):
+        """Double the number of points across the board"""
+        z_add = 0.5*(self.points + np.roll(self.points, -1))
+        f_add = self.func(z_add)
+
+        self.points = self.interweave(self.points, z_add)
+        self.f_points = self.interweave(self.f_points, f_add)
+
+    def refine_select(self, tol=0.1, max_step=0.1):
+        """Refine where argument jump larger than tolerance"""
+        z_add = 0.5*(self.points + np.roll(self.points, 1))
+
+        da = np.angle(self.f_points) - np.angle(np.roll(self.f_points, 1))
+
+        #dap = da + 2.0*np.pi
+        #dam = da - 2.0*np.pi
+        #da = np.minimum(np.abs(da), np.minimum(np.abs(dap), np.abs(dam)))
+
+        dz = np.abs(self.points - np.roll(self.points, 1))
+
+        step_change_too_large = \
+          ((dz > 2*np.roll(dz, 1)) | (dz > 2*np.roll(dz, -1)))
+
+        want_refine = ((np.abs(da) > tol) | (step_change_too_large)) | (dz > max_step)
+
+        # Add extra points where angle change is too large, or
+        # change in resolution is too large, but
+        # ignoring jumps of ~2*pi
+        #sel = np.asarray(((np.abs(da) > tol) |
+        #                  (step_change_too_large)) &
+        #                 ((np.abs(da) < 2*np.pi-tol) |
+        #                  (dz > min_step))).nonzero()
+        sel = np.asarray((want_refine) & (dz > 1.0e-8)).nonzero()
+
+
+        z_add = z_add[sel[0]]
+        f_add = self.func(z_add)
+
+        if np.all(np.isfinite(f_add)) != True:
+            raise ValueError("Infinite value in f_add")
+
+        self.points = np.insert(self.points, sel[0], z_add)
+        self.f_points = np.insert(self.f_points, sel[0], f_add)
+
+        return sel[0]
+
+    def count_roots(self, verbose=False, max_iter=100):
+        """Count number of roots in domain"""
+
+        self.success = False
+        ## for i in range(0, max_iter):
+        ##     # Refine where necessary, count number of terms added
+        ##     n_add = len(self.refine_select(tol=0.1))
+
+        ##     if verbose == True:
+        ##         print(i, self.sum_angles(), n_add)
+
+        ##     # Nothing added; done
+        ##     if n_add == 0:
+        ##         break
+
+        ## self.refine()
+
+        for i in range(0, max_iter):
+            # Refine where necessary, count number of terms added
+            n_add = len(self.refine_select())
+
+            if verbose == True:
+                print(i, self.sum_angles(), n_add)
+
+            # Nothing added; done
+            if n_add == 0:
+                a = self.sum_angles()
+                ret = np.rint(a)
+                if np.abs(a - ret) < 1.0e-6:
+                    self.success = True
+                return int(ret)
+
+        return []
