@@ -11,6 +11,7 @@ import scipy.optimize
 # The function is broken up into a core and two wrappers, as different aspects
 # are needed at different times.
 
+
 def lognormpdf(y, s, loc, scale=1.0):
     """Avoid actually using scipy.
     """
@@ -61,6 +62,18 @@ def get_sigma0_birnstiel_bump(amin, aP, epstot, aL=None, aR=None,
     """
     aL, aR, fnn, sigma, b = _handle_args_core(amin, aP, aL, aR, bumpfac, beta)
 
+    # A wrapper to make the whole thing handle array arguments
+    def Fnn_vec(a):
+        a = np.asarray(a)
+        scalar_input = False
+        if a.ndim == 0:
+            a = a[None]  # Makes x 1D
+            scalar_input = True
+        f = np.vectorize(Fnn, otypes='f')(a)
+        if scalar_input:
+            return np.squeeze(f)
+        return f
+
     def Fnn(a):
         if a < amin:
             return 0.0
@@ -74,9 +87,9 @@ def get_sigma0_birnstiel_bump(amin, aP, epstot, aL=None, aR=None,
             return 0.0
 
     def mnn(a):
-        return Fnn(a)*(a**3)
+        return Fnn_vec(a)*(a**3)
 
-    mnorm = scipy.integrate.quad(mnn, amin, aR, epsrel=1e-12, epsabs=1e-12)[0]
+    mnorm = scipy.integrate.quad(mnn, amin, aR, epsrel=1e-12, limit=100)[0]
 
     sigma0 = lambda a: mnn(a)/mnorm*epstot
     return sigma0
