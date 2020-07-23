@@ -1,8 +1,9 @@
 import numpy as np
 import numpy.testing as npt
-from .power_bump import get_sigma0_birnstiel_bump, get_birnstiel_discontinuity
+from .power_bump import PowerBump
 from .sizedensity import SizeDensity
 from .psi_mode import PSIMode
+from .tanhsinh import TanhSinh
 import pytest
 
 # Tolerance for tests
@@ -16,7 +17,8 @@ def test_psi_mode_0():
              stokes_range=[1.0e-8, 0.1],
              real_range=[-2, 2],
              imag_range=[1.0e-8, 1],
-             single_size_flag=True)
+             single_size_flag=True,
+             tanhsinh_integrator=TanhSinh())
     roots = pm.calculate(wave_number_x=30,
                          wave_number_z=30)
     print('roots')
@@ -72,11 +74,9 @@ def test_psi_mode_3():
     aR = 0.156
     bumpfac = 2.0
     epstot = 10.0
-    sigma0 = get_sigma0_birnstiel_bump(amin, aP, epstot, aL=aL, aR=aR,
-                                       bumpfac=bumpfac)
-
-    sd = SizeDensity(sigma0, [amin, aR])
-    pole = get_birnstiel_discontinuity(amin, aP, aL=aL, aR=aR, bumpfac=bumpfac)
+    pb = PowerBump(amin=amin, aP=aP, aL=aL, aR=aR, bumpfac=bumpfac)
+    sd = SizeDensity(pb.sigma0, [amin, aR])
+    pole = pb.get_discontinuity()
     sd.poles = [pole]
 
     np.random.seed(0)
@@ -88,7 +88,8 @@ def test_psi_mode_3():
                  max_zoom_domains=1,
                  verbose_flag=False,
                  single_size_flag=False,
-                 size_density=sd)
+                 size_density=sd,
+                 tanhsinh_integrator=TanhSinh())
 
     Kx = 200
     Kz = 1000

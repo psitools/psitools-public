@@ -11,7 +11,8 @@ from abc import ABC, abstractmethod
 
 # Modules from this package
 from .taus_gridding import gridmap, get_gridding
-from .power_bump import get_sigma0_birnstiel_bump, lognormpdf
+from .power_bump import PowerBump, lognormpdf
+from .tanhsinh import TanhSinh
 
 
 class StreamingSolver:
@@ -60,10 +61,13 @@ class StreamingSolver:
         self.deltatausmask = None
         # just do it by numerical quad, no special functions and cases
         # for SJP
-        self.J0 = scipy.integrate.quad(self.dJ0, self.tsmin, self.tsmax,
-                      limit=100, epsabs=1e-12, epsrel=1e-12)[0]
-        self.J1 = scipy.integrate.quad(self.dJ1, self.tsmin, self.tsmax,
-                      limit=100, epsabs=1e-12, epsrel=1e-12)[0]
+        # self.J0 = scipy.integrate.quad(self.dJ0, self.tsmin, self.tsmax,
+        #               limit=100, epsabs=1e-12, epsrel=1e-12)[0]
+        # self.J1 = scipy.integrate.quad(self.dJ1, self.tsmin, self.tsmax,
+        #               limit=100, epsabs=1e-12, epsrel=1e-12)[0]
+        integrator = TanhSinh()
+        self.J0 = integrator.integrate(self.dJ0, self.tsmin, self.tsmax)
+        self.J1 = integrator.integrate(self.dJ1, self.tsmin, self.tsmax)
 
     def dJ0(self, taus):
         """Background state integrand for SJP """
@@ -502,12 +506,15 @@ class StreamingSolverLogNormal(StreamingSolver):
                                             epsrel=1e-12)[0]
         # just do it by numerical quad, no special functions and cases
         # for SJP
-        self.J0 = scipy.integrate.quad(self.dJ0, self.tsmin, self.tsmax,
-                                       limit=100, epsabs=1e-12,
-                                       epsrel=1e-12)[0]
-        self.J1 = scipy.integrate.quad(self.dJ1, self.tsmin, self.tsmax,
-                                       limit=100, epsabs=1e-12,
-                                       epsrel=1e-12)[0]
+        # self.J0 = scipy.integrate.quad(self.dJ0, self.tsmin, self.tsmax,
+        #                                limit=100, epsabs=1e-12,
+        #                                epsrel=1e-12)[0]
+        # self.J1 = scipy.integrate.quad(self.dJ1, self.tsmin, self.tsmax,
+        #                                limit=100, epsabs=1e-12,
+        #                                epsrel=1e-12)[0]
+        integrator = TanhSinh()
+        self.J0 = integrator.integrate(self.dJ0, self.tsmin, self.tsmax)
+        self.J1 = integrator.integrate(self.dJ1, self.tsmin, self.tsmax)
 
     def sigma0(self, ts):
         return self.massdist(ts)/self.epsnorm * self.epstot
@@ -518,7 +525,8 @@ class StreamingSolverPowerBump(StreamingSolver):
        sigma is the width, and peak is the peak size"""
 
     def __init__(self, taus, epstot, beta, aL, aP, bumpfac,
-                 sigdiff=None, c=0.05, eta=0.05*0.05, alpha=None, dust_pressure=False):
+                 sigdiff=None, c=0.05, eta=0.05*0.05, alpha=None,
+                 dust_pressure=False):
         self.taus = taus
         self.epstot = epstot
         self.beta = beta
@@ -534,22 +542,47 @@ class StreamingSolverPowerBump(StreamingSolver):
         self.bumpfac = bumpfac
         self.sigdiff = sigdiff
         self.deltatausmask = None
-        self.massdist = np.vectorize(get_sigma0_birnstiel_bump(amin=self.tsmin,
-                                                 aL=self.aL,
-                                                 aP=self.aP,
-                                                 aR=self.tsmax,
-                                                 bumpfac=self.bumpfac,
-                                                 beta=self.beta,
-                                                 epstot=self.epstot))
+#        self.pbdisc = get_birnstiel_discontinuity(
+#                                                 amin=self.tsmin,
+#                                                 aL=self.aL,
+#                                                 aP=self.aP,
+#                                                 aR=self.tsmax,
+#                                                 bumpfac=self.bumpfac,
+#                                                 beta=self.beta)
+#        self.massdist = np.vectorize(get_sigma0_birnstiel_bump(amin=self.tsmin,
+#                                                 aL=self.aL,
+#                                                 aP=self.aP,
+#                                                 aR=self.tsmax,
+#                                                 bumpfac=self.bumpfac,
+#                                                 beta=self.beta,
+#                                                 epstot=self.epstot))
+        self.powerbump = PowerBump(amin=self.tsmin,
+                                   aL=self.aL,
+                                   aP=self.aP,
+                                   aR=self.tsmax,
+                                   bumpfac=self.bumpfac,
+                                   beta=self.beta,
+                                   epstot=self.epstot)
+        self.pbdisc = self.powerbump.get_discontinuity()
+        self.massdist = self.powerbump.sigma0
+        # Quadpack isn't the best, but we do what we can
+        epsrel = 1e-12
+        epsabs = 1e-12
+        integrator = TanhSinh()
         self.epsnorm = scipy.integrate.quad(self.massdist,
                                             self.tsmin, self.tsmax, limit=100,
-                                            epsabs=1e-12, epsrel=1e-12)[0]
-        self.J0 = scipy.integrate.quad(self.dJ0, self.tsmin, self.tsmax,
-                                       limit=100, epsabs=1e-12,
-                                       epsrel=1e-12)[0]
-        self.J1 = scipy.integrate.quad(self.dJ1, self.tsmin, self.tsmax,
-                                       limit=100, epsabs=1e-12,
-                                       epsrel=1e-12)[0]
+                                            epsabs=epsabs, epsrel=epsrel,
+                                            points=[self.pbdisc])[0]
+        self.J0 = integrator.integrate(self.dJ0, self.tsmin, self.tsmax)
+        #self.J0 = scipy.integrate.quad(self.dJ0, self.tsmin, self.tsmax,
+        #                               limit=100, epsabs=epsabs,
+        #                               epsrel=epsrel,
+        #                               points=[self.pbdisc])[0]
+        self.J1 = integrator.integrate(self.dJ1, self.tsmin, self.tsmax)
+        #self.J1 = scipy.integrate.quad(self.dJ1, self.tsmin, self.tsmax,
+        #                               limit=100, epsabs=epsabs,
+        #                               epsrel=epsrel,
+        #                               points=[self.pbdisc])[0]
 
     def sigma0(self, ts):
         return self.massdist(ts)
