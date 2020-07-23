@@ -70,13 +70,15 @@ class PSIMode():
         self.minimum_interpolation_nodes = 4
         self.force_at_least_one_root = True
 
+        self.n_function_call = 0
+
         # AAA rational approximation
         self.ra = cr.RationalApproximation(self.domain,
                                            tol=tol,
                                            clean_tol=clean_tol)
 
     def calculate(self, wave_number_x, wave_number_z, viscous_alpha=0,
-                  guess_roots=[]):
+                  guess_roots=[], count_roots=False):
         """Calculate complex mode frequency at wave number Kx and Kz and viscosity parameter viscous_alpha.
 
         Args:
@@ -95,6 +97,19 @@ class PSIMode():
         self.z_sample = self.domain.generate_random_sample_points(self.n_sample)
         self.n_function_call = self.n_sample
         self.f_sample = self.disp(self.z_sample)
+
+        if count_roots == True:
+            z_list = [self.domain.xmin + 1j*self.domain.ymin,
+                      self.domain.xmax + 1j*self.domain.ymin,
+                      self.domain.xmax + 1j*self.domain.ymax,
+                      self.domain.xmin + 1j*self.domain.ymax]
+
+            rect = cr.ClosedPath(self.disp, z_list)
+            self.n_roots = rect.count_roots()
+            self.log_print('Number of roots: {}'.format(self.n_roots))
+
+            self.z_sample = np.concatenate((self.z_sample, rect.points))
+            self.f_sample = np.concatenate((self.f_sample, rect.f_points))
 
         # Put zoom domain around guessed roots
         for centre in guess_roots:
@@ -132,7 +147,7 @@ class PSIMode():
             sel = np.asarray(self.domain.is_in(zeros)).nonzero()
             zeros = zeros[sel]
 
-            # Reduce clean tolerance until enough nodes and at least one root
+            # Reduce clean tolerance until enough nodes and at least one growing root
             min_nodes = self.minimum_interpolation_nodes
             fac = 1 + n
             if len(guess_roots) > 0:
@@ -140,7 +155,8 @@ class PSIMode():
             min_nodes *= (1 + n + len(guess_roots))
             old_clean_tol = self.ra.clean_tol
             while (np.sum(self.ra.maskF) < min_nodes or
-                   (len(zeros) == 0 and self.force_at_least_one_root == True)):
+                   (len(zeros[np.asarray(np.imag(zeros) > 0.0).nonzero()]) == 0 and
+                    self.force_at_least_one_root == True)):
                 self.ra.clean_tol = 0.5*self.ra.clean_tol
 
                 # Stop if too small, nothing to be done at this point
@@ -273,8 +289,11 @@ class PSIMode():
             # Find the roots of the dispersion relation
             ret = self.find_dispersion_roots(zeros, max_iter)
 
-            # Quit if a root found or no more zoom levels or sites
-            if (len(ret) > 0 or
+            # Select growing roots
+            sel = np.asarray(np.imag(ret) > 0.0).nonzero()
+
+            # Quit if a growing root found or no more zoom levels or sites
+            if (len(ret[sel]) > 0 or
                 n == self.max_zoom_level or
                 len(zoom_roots) == 0):
                 return ret
@@ -298,6 +317,7 @@ class PSIMode():
     def find_dispersion_roots(self, zeros, max_iter):
         # zeros = roots of rational approximation.
         zeros = np.atleast_1d(zeros)
+
         for i in range(0, len(zeros)):
             self.log_print('Starting iteration at z = {}'.format(zeros[i]))
 
@@ -365,52 +385,80 @@ class PSIMode():
 
         return ret.x[0] + 1j*ret.x[1]
 
-    def find_root(self, w0, max_iter=1000):
+    def find_root(self, w0, max_iter=1000, select_inside_domain=True,
+                  initial_iterations=5):
         """Find a root of the dispersion relation, starting from initial guess w0"""
-        # Secant method needs second point.
-        # There appears to be a bug in scipy in automatically adding x1 for
-        # complex x0.
-        eps = 1.0e-6
-        w1 = w0 * (1 + eps)
-        w1 += (eps if w1.real >= 0 else -eps)
 
-        # Experiment: do a maximum of 5 iterations
-        # Check if solution runs away from initial point
-        # If not, continue for as long as it takes
-        z = opt.root_scalar(self.disp, method='secant',
-                            x0=w0, x1=w1,
-                            maxiter=5)
-        self.n_function_call += z.function_calls
-        self.log_print("Result after 5 iterations:")
-        self.log_print(z)
-        self.log_print("|z - z0|/|z0| = {}".format(np.abs(z.root - w0)/np.abs(w0)))
+        # Make sure we can handle both vector and scalar w0
+        w0 = np.asarray(w0)
+        scalar_input = False
+        if w0.ndim == 0:
+            w0 = w0[None]  # Makes w 1D
+            scalar_input = True
+        else:
+            original_shape = np.shape(w0)
+            w0 = np.ravel(w0)
 
-        if (z.converged == False and
-            np.abs(z.root - w0)/np.abs(w0) < 1 and
-            max_iter > 5):
-            self.log_print("Starting further iteration")
+        ret = 0*w0
 
-            # Start where we left off, again need second point
-            w0 = z.root
-            w1 = w0 * (1 + eps)
+        for i in range(0, len(w0)):
+            # Secant method needs second point.
+            # There appears to be a bug in scipy in automatically adding x1 for
+            # complex x0.
+            eps = 1.0e-6
+            w1 = w0[i] * (1 + eps)
             w1 += (eps if w1.real >= 0 else -eps)
 
+            # Experiment: do a maximum of 5 iterations
+            # Check if solution runs away from initial point
+            # If not, continue for as long as it takes
             z = opt.root_scalar(self.disp, method='secant',
-                                x0=w0, x1=w1,
-                                maxiter=max_iter)
+                                x0=w0[i], x1=w1,
+                                maxiter=initial_iterations)
             self.n_function_call += z.function_calls
+            self.log_print("Result after initial iterations:")
             self.log_print(z)
-        else:
-            if (z.converged == False):
-                self.log_print("Secant is running away; no further iterations")
+            self.log_print("|z - z0|/|z0| = {}".format(np.abs(z.root - w0[i])/np.abs(w0[i])))
 
-        if (z.converged == True and
-            self.domain.is_in(z.root) == True):
-            self.max_convergence_iterations = \
-              np.max([self.max_convergence_iterations, z.iterations])
-            return z.root
-        # Return value that will be deselected (TODO)
-        return -1j
+            if (z.converged == False and
+                np.abs(z.root - w0[i])/np.abs(w0[i]) < 1 and
+                max_iter > initial_iterations):
+                self.log_print("Starting further iteration")
+
+                # Start where we left off, again need second point
+                w0[i] = z.root
+                w1 = w0[i] * (1 + eps)
+                w1 += (eps if w1.real >= 0 else -eps)
+
+                z = opt.root_scalar(self.disp, method='secant',
+                                    x0=w0[i], x1=w1,
+                                    maxiter=max_iter)
+                self.n_function_call += z.function_calls
+                self.log_print(z)
+            else:
+                if (z.converged == False):
+                    self.log_print("Secant is running away; no further iterations")
+
+            root_is_in_domain = ((self.domain.is_in(z.root) == True) or
+                                 (select_inside_domain == False))
+
+            #if (z.converged == True and
+            #    self.domain.is_in(z.root) == True):
+            if (z.converged == True and
+                root_is_in_domain == True):
+                self.max_convergence_iterations = \
+                  np.max([self.max_convergence_iterations, z.iterations])
+                #return z.root
+                ret[i] = z.root
+            else:
+                ret[i] = -1j
+            # Return value that will be deselected (TODO)
+            #return -1j
+
+        # Return value of original shape
+        if scalar_input:
+            return np.squeeze(ret)
+        return np.reshape(ret, original_shape)
 
     def plot_dispersion(self, wave_number_x, wave_number_z,
                         viscous_alpha=0,

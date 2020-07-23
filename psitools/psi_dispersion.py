@@ -42,8 +42,7 @@ class PSIDispersion():
             sigma = lambda x: np.power(x, 3 - size_distribution_power)
             self.size_density = SizeDensity(sigma, stokes_range)
 
-        self.poles = self.size_density.poles
-
+        self.poles = list(self.size_density.poles)
         self.tanhsinh_integrator = tanhsinh_integrator
 
         # Error tolerances in calls to quadpack
@@ -59,6 +58,8 @@ class PSIDispersion():
         self.ux = lambda x: 2*denom*(j1 - x*(1 + j0))/(1 + x*x)
         self.uy = lambda x: -denom*(1 + j0 + x*j1)/(1 + x*x)
 
+        # Parts of coefficients of polynomial Re(w) - Kx*ux(x) = 0
+        self.base_poly = [-2*denom*j1, 2*denom*(1 + j0), 0]
 
     def correct_integral(self, f, a, b, poles):
         """Separately integrate troublesome subintervals"""
@@ -380,20 +381,46 @@ class PSIDispersion():
         ret = 0.0*w
         for i in range(0, len(w)):
             # Identify the pole (can there be 2???)
-            f = lambda x: np.real(w[i]) - self.kx*self.ux(x)
+            #f = lambda x: np.real(w[i]) - self.kx*self.ux(x)
 
             # List of poles from size density; may be empty
             self.poles = list(self.size_density.poles)
-            if (f(self.taumin)*f(self.taumax) < 0.0):
-                res = opt.fsolve(f, x0=1.5*self.taumin + 0.5*self.taumax,
-                                 xtol=1.49e-11)
-                if res[0] > self.taumin:
-                    self.poles.append(res[0])
 
+            # Polynomial solving Re(w) - Kx*ux(x) = 0
+            coeff = [self.base_poly[0] + np.real(w[i])/self.kx,
+                     self.base_poly[1], np.real(w[i])/self.kx]
+            roots = np.polynomial.Polynomial(coeff).roots()
+
+            # Select roots in domain
+            for j in range(0, len(roots)):
+                if (np.real(roots[j]) > self.taumin and
+                    np.real(roots[j]) < self.taumax and
+                    np.isreal(roots[j])):
+                     self.poles.append(roots[j]/self.taumax)
+
+            ## if (f(self.taumin)*f(self.taumax) < 0.0):
+            ##     res = opt.fsolve(f, x0=1.5*self.taumin + 0.5*self.taumax,
+            ##                      xtol=1.49e-11)
+            ##     if res[0] > self.taumin:
+            ##         self.poles.append(res[0]/self.taumax)
+            ## else:
+            ##     # Possibly two poles
+            ##     res = opt.fsolve(f, x0=self.taumax, xtol=1.49e-11)
+            ##     if (res[0] > self.taumin and res[0] < self.taumax):
+            ##          self.poles.append(res[0]/self.taumax)
+            ##     res = opt.fsolve(f, x0=self.taumin, xtol=1.49e-11)
+            ##     if (res[0] > self.taumin and res[0] < self.taumax):
+            ##          self.poles.append(res[0]/self.taumax)
+
+            ## print('Old: ', self.poles)
             #for p in self.poles:
             #    p = p/self.taumax
-            for j in range(0, len(self.poles)):
-                self.poles[j] /= self.taumax
+            #for j in range(0, len(self.poles)):
+            #    self.poles[j] /= self.taumax
+            #if len(self.poles) > 0:
+            #    self.poles = self.poles.sort()
+
+            self.poles.sort()
 
             M = self.matrix_M(w[i])
             P = self.matrix_P(w[i])
