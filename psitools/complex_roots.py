@@ -494,3 +494,115 @@ class RootFollower():
             ret[idx] = z.root
 
         return ret
+
+class ClosedPath():
+    """Class containing a piecewise linear closed contour in the complex plane.
+
+    The main purpose is to be able to count the roots of a function inside the contour.
+
+    Args:
+        f: function of a complex variable f(z)
+        z_list: list of complex values specifying the piecewise linear contour, in counterclockwise orientation.
+    """
+    def __init__(self, f, z_list):
+        self.func = f
+        self.points = np.asarray(z_list)
+        self.f_points = self.func(z_list)
+
+        self.centre = np.mean(self.points)
+
+    def sum_angles(self):
+        """Sum over argument ratio, should equal number of enclosed roots"""
+
+        # Try and avoid division by zero
+        f = self.f_points + 1.0e-30*1j
+        return 0.5*np.sum(np.angle(np.roll(f, -1)/f))/np.pi
+
+    def interweave(self, a, b):
+        """Interweave two arrays a and b, starting with a[0]"""
+        c = np.empty((a.size + b.size,), dtype=a.dtype)
+        c[0::2] = a
+        c[1::2] = b
+
+        return c
+
+    def refine(self):
+        """Double the number of points across the contour"""
+        z_add = 0.5*(self.points + np.roll(self.points, -1))
+        f_add = self.func(z_add)
+
+        self.points = self.interweave(self.points, z_add)
+        self.f_points = self.interweave(self.f_points, f_add)
+
+    def refine_select(self, tol=0.1, max_step=0.1):
+        """Refine where argument jump larger than tolerance
+
+        Args:
+            tol (optional): tolerance of argument difference between neighbouring points. Defaults to 0.1.
+            max_step (optional): maximum distance between neighbouring points. Defaults to 0.1.
+        """
+        # Potentially add points in the middle of intervals
+        z_add = 0.5*(self.points + np.roll(self.points, 1))
+
+        # Argument difference between neighbouring points
+        da = np.angle(self.f_points) - np.angle(np.roll(self.f_points, 1))
+        # Distance between neighbouring points
+        dz = np.abs(self.points - np.roll(self.points, 1))
+
+        # Make sure the distance between points does not change too rapidly
+        step_change_too_large = \
+          ((dz > 2*np.roll(dz, 1)) | (dz > 2*np.roll(dz, -1)))
+
+        # Want to add points if angle difference too large, step change is
+        # too large, or step size too large
+        want_refine = ((np.abs(da) > tol) |
+                       (step_change_too_large)) | (dz > max_step)
+
+        # Select points to add, never making the step size too small
+        sel = np.asarray((want_refine) & (dz > 1.0e-8)).nonzero()
+
+        # Add points and calculate new function values
+        z_add = z_add[sel[0]]
+        f_add = self.func(z_add)
+
+        if np.all(np.isfinite(f_add)) != True:
+            raise ValueError("Infinite value in f_add")
+
+        # Insert into arrays
+        self.points = np.insert(self.points, sel[0], z_add)
+        self.f_points = np.insert(self.f_points, sel[0], f_add)
+
+        # Return number of points added
+        return len(sel[0])
+
+    def count_roots(self, verbose=False, max_iter=100, tol=0.1, max_step=0.1):
+        """Count number of roots in domain
+
+        Args:
+            verbose (bool, optional): Flag whether to print progress. Defaults to False
+            max_iter (optional): Maximum number of refinement iterations. Defaults to 100. RuntimeError if not converged before.
+            tol (optional): Tolerance in jump in argument. Defaults to 0.1.
+            max_step (optional): Maximum step size along contour. Defaults to 0.1,
+        """
+
+        self.success = False
+        for i in range(0, max_iter):
+            # Refine where necessary, count number of terms added
+            n_add = self.refine_select(tol=tol, max_step=max_step)
+
+            if verbose == True:
+                print(i, self.sum_angles(), n_add)
+
+            # Nothing added; done
+            if n_add == 0:
+                a = self.sum_angles()
+                ret = np.rint(a)
+                if np.abs(a - ret) < 1.0e-6:
+                    self.success = True
+                    return int(ret)
+
+                raise RuntimeError("No convergence to integer number of roots")
+
+        raise RuntimeError("Maximum number of iterations exceeded")
+
+        return []

@@ -106,3 +106,61 @@ def get_birnstiel_discontinuity(amin, aP, aL=None, aR=None,
     # Need to solve fnn = b between aL and aP
     f = lambda x: fnn(x) - b(x)
     return scipy.optimize.bisect(f, aL, aP)
+
+
+class PowerBump():
+    def __init__(self, amin, aP, aL=None, aR=None, bumpfac=2.0, beta=-3.5):
+        self.amin = amin
+        self.aP = aP
+        if aL is None:
+            self.aL = 2*aP/3
+        else:
+            self.aL = aL
+        if aR is None:
+            self.aR = 1.56*aP
+        else:
+            self.aR = aR
+
+        sigma = np.max((np.min((np.abs(self.aR-aP), np.abs(self.aL-aP)))
+                       / np.sqrt(np.log(2.0)), 0.1*aP))
+
+        fac_fnn = aP**(-beta)
+        self.fnn = lambda a: fac_fnn*a**(beta)
+
+        fac_b = bumpfac*self.fnn(self.aL)
+        fac_b2 = -1/sigma**2
+        self.b = lambda a: fac_b*np.exp(fac_b2*np.log(a-(-1+aP))**2)
+
+    def get_discontinuity(self):
+        # Need to solve fnn = b between aL and aP
+        f = lambda x: self.fnn(x) - self.b(x)
+        return scipy.optimize.bisect(f, self.aL, self.aP)
+
+    def sigma0(self, a):
+        # Make sure we can handle both vector and scalar a
+        a = np.asarray(a)
+        scalar_input = False
+        if a.ndim == 0:
+            a = a[None]  # Makes w 1D
+            scalar_input = True
+        else:
+            original_shape = np.shape(a)
+            a = np.ravel(a)
+
+        Fnn = self.fnn(a)
+        bb = self.b(a)
+
+        maxbf = np.maximum(Fnn, bb)
+
+        sel = np.asarray(a > self.aL).nonzero()
+        Fnn[sel] = maxbf[sel]
+
+        sel = np.asarray(a > self.aP).nonzero()
+        Fnn[sel] = bb[sel]
+
+        ret = Fnn*a**3
+
+        # Return value of original shape
+        if scalar_input:
+            return np.squeeze(ret)
+        return np.reshape(ret, original_shape)
