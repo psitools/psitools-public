@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.testing as npt
-from .power_bump import get_sigma0_birnstiel_bump, get_birnstiel_discontinuity
+from .power_bump import PowerBump
 from .sizedensity import SizeDensity
 from .psi_mode import PSIMode
 from .tanhsinh import TanhSinh
@@ -74,11 +74,9 @@ def test_psi_mode_3():
     aR = 0.156
     bumpfac = 2.0
     epstot = 10.0
-    sigma0 = get_sigma0_birnstiel_bump(amin, aP, epstot, aL=aL, aR=aR,
-                                       bumpfac=bumpfac)
-
-    sd = SizeDensity(sigma0, [amin, aR])
-    pole = get_birnstiel_discontinuity(amin, aP, aL=aL, aR=aR, bumpfac=bumpfac)
+    pb = PowerBump(amin=amin, aP=aP, aL=aL, aR=aR, bumpfac=bumpfac)
+    sd = SizeDensity(pb.sigma0, [amin, aR])
+    pole = pb.get_discontinuity()
     sd.poles = [pole]
 
     np.random.seed(0)

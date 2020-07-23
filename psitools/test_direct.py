@@ -135,9 +135,9 @@ def test_PB_2(tmpdir):
              'gridding': 'logarithmic',
              'prefix': tmpdir,
              'alpha': 4e-8})
-    ref = np.array((0.01185500097834895+0.01382494694562451j,
-                    0.011634542349422348+0.016713035662141162j,
-                    0.012185844240649526+0.01725205057470446j))
+    ref = np.array((0.011841681674382+0.013826145093578386j,
+                    0.01162116067659627+0.016714209705801227j,
+                    0.012172444373405152+0.01725321235421818j))
     npt.assert_allclose(ans.real, ref.real, rtol=rtol)
     npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
 
