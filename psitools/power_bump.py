@@ -61,7 +61,6 @@ class PowerBump():
         self.mnorm = scipy.integrate.quad(self.mnn, amin, self.aR,
                                           epsrel=1e-15, limit=100,
                                           points=[self.get_discontinuity()])[0]
-        print('self.mnorm', self.mnorm)
         self.epstot = epstot
 
     def get_discontinuity(self):

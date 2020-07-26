@@ -35,7 +35,7 @@ def spreadgrid(old, const_axis=0):
 
 def get_if(finishedruns, runkey):
     """Utility for getting entries form a dict of lists, catching the key -1
-    as meanign the list returned should be empty"""
+    as meaning the list returned should be empty"""
     if runkey >= 0:  # if not -1, which means there should be a run
         return list(finishedruns[runkey])
     else:
