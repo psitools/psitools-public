@@ -6,6 +6,7 @@ import numpy as np
 import time
 import h5py
 import copy
+import tracemalloc
 from mpi4py import MPI
 from psitools import psi_mode_mpi
 
@@ -128,6 +129,11 @@ class PSIGridRefiner:
             args['__init__']['max_zoom_domains'] = 1
             args['calculate']['wave_number_x'] = K[0]
             args['calculate']['wave_number_z'] = K[1]
+            # Catch and remove a deep copy of an object, replace with ref
+            if 'tanhsinh_integrator' in args['__init__'].keys():
+                del args['__init__']['tanhsinh_integrator']
+                args['__init__']['tanhsinh_integrator'] = \
+                    self.baseargs['__init__']['tanhsinh_integrator'] 
             arglist.append(args)
             rungridflat[ik] = ik  # redundant info, but explicit
 
@@ -173,6 +179,8 @@ class PSIGridRefiner:
                 break
 
     def sweep_last_grid(self):
+        if self.rank == 0:
+            tracemalloc.start()
         Kxgrid = self.grids[-1]['Kx']
         Kzgrid = self.grids[-1]['Kz']
         rungrid = self.grids[-1]['runs']
@@ -218,6 +226,11 @@ class PSIGridRefiner:
                 args['calculate']['wave_number_x'] = Kxgrid[iz, ix]
                 args['calculate']['wave_number_z'] = Kzgrid[iz, ix]
                 args['calculate']['guess_roots'] = prune_eps(near_roots)
+                # Catch and remove a deep copy of an object, replace with ref
+                if 'tanhsinh_integrator' in args['__init__'].keys():
+                    del args['__init__']['tanhsinh_integrator']
+                    args['__init__']['tanhsinh_integrator'] = \
+                        self.baseargs['__init__']['tanhsinh_integrator'] 
                 arglist.append(args)
                 newrungrid[iz, ix] = offset + iarg - rungrid[iz, ix]
                 firstiarg = iarg
@@ -232,6 +245,13 @@ class PSIGridRefiner:
                     iarg += 1
 
         if self.rank == 0:
+            snapshot = tracemalloc.take_snapshot()
+            top_stats = snapshot.statistics('lineno')
+            print('--------------------------')
+            print("[ Tracemalloc Top 10 ]")
+            for stat in top_stats[:10]:
+                print(stat)
+            print('--------------------------')
             print('Will run ', iarg, ' new points')
 
         # Run the calculations
