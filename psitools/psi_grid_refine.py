@@ -125,15 +125,10 @@ class PSIGridRefiner:
         # (to __init__ and caculate of PSIMode) random_seed is seperate
         arglist = []
         for ik, K in enumerate(Ks):
-            args = copy.deepcopy(self.baseargs)
+            args = self.safe_deepcopy(self.baseargs)
             args['__init__']['max_zoom_domains'] = 1
             args['calculate']['wave_number_x'] = K[0]
             args['calculate']['wave_number_z'] = K[1]
-            # Catch and remove a deep copy of an object, replace with ref
-            if 'tanhsinh_integrator' in args['__init__'].keys():
-                del args['__init__']['tanhsinh_integrator']
-                args['__init__']['tanhsinh_integrator'] = \
-                    self.baseargs['__init__']['tanhsinh_integrator'] 
             arglist.append(args)
             rungridflat[ik] = ik  # redundant info, but explicit
 
@@ -178,6 +173,18 @@ class PSIGridRefiner:
             if self.sweep_last_grid() == 0:
                 break
 
+    def safe_deepcopy(self, src):
+        '''This exists because deepcopy of an args dict will copy integrator objects, 
+        which need to be handled as a shallow copy to not kill memory.'''
+        args = copy.deepcopy(src)
+        # Catch and remove a deep copy of an object, replace with ref
+        if 'tanhsinh_integrator' in args['__init__'].keys():
+            del args['__init__']['tanhsinh_integrator']
+            args['__init__']['tanhsinh_integrator'] = \
+                self.baseargs['__init__']['tanhsinh_integrator'] 
+        return args
+
+
     def sweep_last_grid(self):
         if self.rank == 0:
             tracemalloc.start()
@@ -221,22 +228,17 @@ class PSIGridRefiner:
             # rerun only is more guesses available
             if foundguesses > nguess[iz, ix]:
                 nguess[iz, ix] = foundguesses
-                args = copy.deepcopy(self.baseargs)
+                args = self.safe_deepcopy(self.baseargs)
                 args['__init__']['max_zoom_domains'] = 0
                 args['calculate']['wave_number_x'] = Kxgrid[iz, ix]
                 args['calculate']['wave_number_z'] = Kzgrid[iz, ix]
                 args['calculate']['guess_roots'] = prune_eps(near_roots)
-                # Catch and remove a deep copy of an object, replace with ref
-                if 'tanhsinh_integrator' in args['__init__'].keys():
-                    del args['__init__']['tanhsinh_integrator']
-                    args['__init__']['tanhsinh_integrator'] = \
-                        self.baseargs['__init__']['tanhsinh_integrator'] 
                 arglist.append(args)
                 newrungrid[iz, ix] = offset + iarg - rungrid[iz, ix]
                 firstiarg = iarg
                 iarg += 1
                 for ia in range(0, self.reruns):
-                    args = copy.deepcopy(args)
+                    args = self.safe_deepcopy(args)
                     args['random_seed'] += 1
                     args['is_rerun'] = firstiarg  # can hide a flag here
                     arglist.append(args)
