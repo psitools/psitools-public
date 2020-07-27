@@ -137,7 +137,6 @@ class MpiScheduler:
                                                   sharedrootsimag))
                 p.start()
                 p.join()
-                print('got sharednroots', sharednroots[0])
                 result = np.zeros(sharednroots[0], dtype=np.complex)
                 result.real = sharedrootsreal[:sharednroots[0]]
                 result.imag = sharedrootsimag[:sharednroots[0]]
