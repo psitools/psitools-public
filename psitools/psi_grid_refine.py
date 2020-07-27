@@ -6,6 +6,7 @@ import numpy as np
 import time
 import h5py
 import copy
+import tracemalloc
 from mpi4py import MPI
 from psitools import psi_mode_mpi
 
@@ -35,7 +36,7 @@ def spreadgrid(old, const_axis=0):
 
 def get_if(finishedruns, runkey):
     """Utility for getting entries form a dict of lists, catching the key -1
-    as meanign the list returned should be empty"""
+    as meaning the list returned should be empty"""
     if runkey >= 0:  # if not -1, which means there should be a run
         return list(finishedruns[runkey])
     else:
@@ -124,7 +125,7 @@ class PSIGridRefiner:
         # (to __init__ and caculate of PSIMode) random_seed is seperate
         arglist = []
         for ik, K in enumerate(Ks):
-            args = copy.deepcopy(self.baseargs)
+            args = self.safe_deepcopy(self.baseargs)
             args['__init__']['max_zoom_domains'] = 1
             args['calculate']['wave_number_x'] = K[0]
             args['calculate']['wave_number_z'] = K[1]
@@ -165,12 +166,28 @@ class PSIGridRefiner:
         self.grids.append({'Kx': Kxgrid, 'Kz': Kzgrid,
                            'runs': rungrid, 'results': finishedruns,
                            'nguess': nguess})
+        if self.root:
+            print(' running grid sweeps')
         max_sweep = 32
         for i in range(0, max_sweep):
             if self.sweep_last_grid() == 0:
                 break
 
+    def safe_deepcopy(self, src):
+        '''This exists because deepcopy of an args dict will copy integrator objects, 
+        which need to be handled as a shallow copy to not kill memory.'''
+        args = copy.deepcopy(src)
+        # Catch and remove a deep copy of an object, replace with ref
+        if 'tanhsinh_integrator' in args['__init__'].keys():
+            del args['__init__']['tanhsinh_integrator']
+            args['__init__']['tanhsinh_integrator'] = \
+                self.baseargs['__init__']['tanhsinh_integrator'] 
+        return args
+
+
     def sweep_last_grid(self):
+        if self.rank == 0:
+            tracemalloc.start()
         Kxgrid = self.grids[-1]['Kx']
         Kzgrid = self.grids[-1]['Kz']
         rungrid = self.grids[-1]['runs']
@@ -211,7 +228,7 @@ class PSIGridRefiner:
             # rerun only is more guesses available
             if foundguesses > nguess[iz, ix]:
                 nguess[iz, ix] = foundguesses
-                args = copy.deepcopy(self.baseargs)
+                args = self.safe_deepcopy(self.baseargs)
                 args['__init__']['max_zoom_domains'] = 0
                 args['calculate']['wave_number_x'] = Kxgrid[iz, ix]
                 args['calculate']['wave_number_z'] = Kzgrid[iz, ix]
@@ -221,7 +238,7 @@ class PSIGridRefiner:
                 firstiarg = iarg
                 iarg += 1
                 for ia in range(0, self.reruns):
-                    args = copy.deepcopy(args)
+                    args = self.safe_deepcopy(args)
                     args['random_seed'] += 1
                     args['is_rerun'] = firstiarg  # can hide a flag here
                     arglist.append(args)
@@ -230,6 +247,13 @@ class PSIGridRefiner:
                     iarg += 1
 
         if self.rank == 0:
+            snapshot = tracemalloc.take_snapshot()
+            top_stats = snapshot.statistics('lineno')
+            print('--------------------------')
+            print("[ Tracemalloc Top 10 ]")
+            for stat in top_stats[:10]:
+                print(stat)
+            print('--------------------------')
             print('Will run ', iarg, ' new points')
 
         # Run the calculations
