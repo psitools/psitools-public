@@ -170,9 +170,9 @@ class MpiScheduler:
         np.copyto(nroots, np.array([len(roots)], dtype=np.int64))
         if len(roots) > 0:
             realpart = np.frombuffer(sharedrootsreal, dtype=np.float64)
-            np.copyto(realpart[:len(nroots)], roots.real)
+            np.copyto(realpart[:len(roots)], roots.real)
             imagpart = np.frombuffer(sharedrootsimag, dtype=np.float64)
-            np.copyto(imagpart[:len(nroots)], roots.imag)
+            np.copyto(imagpart[:len(roots)], roots.imag)
         # return roots.copy()
 
 
