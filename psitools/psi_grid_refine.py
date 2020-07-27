@@ -165,6 +165,8 @@ class PSIGridRefiner:
         self.grids.append({'Kx': Kxgrid, 'Kz': Kzgrid,
                            'runs': rungrid, 'results': finishedruns,
                            'nguess': nguess})
+        if self.root:
+            print(' running grid sweeps')
         max_sweep = 32
         for i in range(0, max_sweep):
             if self.sweep_last_grid() == 0:
