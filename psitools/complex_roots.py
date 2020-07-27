@@ -90,7 +90,7 @@ class RationalApproximation():
             residuals = self.calc_weights_residuals()
         except np.linalg.LinAlgError as err:
             warnings.warn("LinAlgError occured in RationalApproximation." +
-                          + "calc_weights_residuals: " + str(err))
+                          + "calc_weights_residuals: {}".format(str(err)))
             # Unset maskF as point was not used
             self.maskF[i] = 0
             # Mask point with second-highest residual
