@@ -2,6 +2,7 @@
 
 import numpy as np
 
+
 class TanhSinh():
     """Basic implementation of tanh-sinh quadrature. When creating an instance, all abscissae and weights are calculated and can then be used on multiple integrals. No error estimate is provided; for integrals without endpoint singularities it should be close to 10^(-precision_digit).
 
@@ -102,3 +103,16 @@ class TanhSinh():
             result = result + dresult
 
         return result
+
+
+class TanhSinhNoDeepCopy(TanhSinh):
+    """ This subclass exists because of the use of deepcopy in psi_grid_refine
+    and other parallel drivers. As for most scans the TanhSinh object is
+    exactly the same for all points, using this class os the prototype argument
+    will prevent memory being usedup with deep copies of the exact same thing.
+    """
+
+    def __deepcopy__(self, memo):
+        """ This implementation eliminates the ability of copy.deepcopy to
+        deep copy the instance, instead returning a reference."""
+        return self
