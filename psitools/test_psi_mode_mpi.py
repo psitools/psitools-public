@@ -44,7 +44,7 @@ def test_psi_mode_mpi_0():
                         'max_zoom_domains': 1,
                         'tol': 1.0e-13,
                         'clean_tol': 1e-4,
-                        'tanhsinh_integrator': tanhsinh.TanhSinh()},
+                        'tanhsinh_integrator': tanhsinh.TanhSinhNoDeepCopy()},
                         'calculate': {
                             'wave_number_x': K[0],
                             'wave_number_z': K[1]},
