@@ -4,11 +4,11 @@ virtualenv to test.  The setup.py is in the parent dir (../) of this README.
 A possible route to testing, with a virtualenv:
 
 $ python -m venv --system-site-packages test-psitools/
-$ . test-psitools/bin/acctiavte
+$ . test-psitools/bin/actiavte
 
 or use the included conda specification:
 
-$ conda env create -f STE_environment.yml
+$ conda env create -f anaconda_environments/STE_environment.yml
 $ conda activate STE
 
 Then install psitools, by directing pip (not system pip, the one inside the 
