@@ -50,42 +50,40 @@ def test_psi_grid_refine_0():
                              'wave_number_z': None,
                              'guess_roots': []},
                  'random_seed': 2}
-    gr = PSIGridRefiner(batchname, baseargs=baseargs, nbase=(2,2), reruns=1)
+    gr = PSIGridRefiner(batchname, baseargs=baseargs, nbase=(2, 2), reruns=1)
     gr.run_basegrid()
     gr.fill_in_grid()
 
     ref = {
-           1 : np.array([-1.00080611317862e+00 +7.19887678757324e-05j]),
-           2 : [],
-           0 : [],
-           3 : [],
-           5 : [],
-           7 : np.array([-1.07591266729685e+00 +5.78802746530775e-03j,
-                         -1.07591266729705e+00 +5.78802746530644e-03j]),
-           9 : [],
-           11 : [],
-           13 : [],
-           15 : [],
-           17 : [],
-           19 : np.array([-1.00075684729444e+00 +6.75986971488110e-05j,
-                          -1.00075684729444e+00 +6.75986971483880e-05j]),
-           21 : []}
+           1: np.array([-1.00080611317862e+00 +7.19887678757324e-05j]),
+           2: [],
+           0: [],
+           3: [],
+           5: [],
+           7: np.array([-1.07591266729685e+00 +5.78802746530775e-03j,
+                        -1.07591266729705e+00 +5.78802746530644e-03j]),
+           9: [],
+           11: [],
+           13: [],
+           15: [],
+           17: [],
+           19: np.array([-1.00075684729444e+00 +6.75986971488110e-05j,
+                         -1.00075684729444e+00 +6.75986971483880e-05j]),
+           21: []}
 
     if rank == 0:
         print('Top level grid results')
         for key in gr.grids[-1]['results']:
-            print(key,': ', end='')
+            print(key, ': ', end='')
             for res in gr.grids[-1]['results'][key]:
                 print('  {:+15.14e} + {:+15.14e}j'.format(
                       res.real, res.imag), end='')
             print(' ')
         for key in ref:
-           assert(len(ref[key]) == len(gr.grids[-1]['results'][key]))
-           if len(ref[key]) > 0:
-               ref[key].sort(),
-               gr.grids[-1]['results'][key].sort()
-               print('testing ',ref[key],
-                                gr.grids[-1]['results'][key])
-               npt.assert_allclose(ref[key],
-                                   gr.grids[-1]['results'][key],
-                                   rtol=rtol)
+            assert(len(ref[key]) == len(gr.grids[-1]['results'][key]))
+            if len(ref[key]) > 0:
+                ref[key].sort(),
+                gr.grids[-1]['results'][key].sort()
+                npt.assert_allclose(ref[key],
+                                    gr.grids[-1]['results'][key],
+                                    rtol=rtol)
