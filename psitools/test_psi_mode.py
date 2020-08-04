@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.testing as npt
-from .power_bump import PowerBump
+from .power_bump import PowerBump, PowerBumpTail
 from .sizedensity import SizeDensity
 from .psi_mode import PSIMode
 from .tanhsinh import TanhSinh
@@ -106,6 +106,46 @@ def test_psi_mode_3():
 
 @pytest.mark.mpi_skip()
 def test_psi_mode_4():
+    amin = 1.0e-8
+    aBT = 1e-6
+    aL = 2.0/3.0*0.1
+    aP = 0.1
+    aR = 0.156
+    bumpfac = 2.0
+    epstot = 10.0
+    pb = PowerBumpTail(amin=amin, aBT=aBT,
+                       aP=aP, aL=aL, aR=aR, bumpfac=bumpfac)
+    sd = SizeDensity(pb.sigma0, [amin, aR])
+    pole = pb.get_discontinuity()
+    sd.poles = [pole]
+
+    np.random.seed(0)
+    pm = PSIMode(dust_to_gas_ratio=epstot,
+                 stokes_range=[amin, aR],
+                 real_range=[-2, 2],
+                 imag_range=[1.0e-8, 1],
+                 n_sample=15,
+                 max_zoom_domains=1,
+                 verbose_flag=False,
+                 single_size_flag=False,
+                 size_density=sd,
+                 tanhsinh_integrator=TanhSinh())
+
+    Kx = 200
+    Kz = 1000
+    roots = pm.calculate(wave_number_x=Kx, wave_number_z=Kz)
+
+    print('roots')
+    for root in roots:
+        print(root)
+    refs = [0.5086768551253826+0.6230805460283565j]
+    for ans, ref in zip(roots, refs):
+        npt.assert_allclose(ans.real, ref.real, rtol=rtol)
+        npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
+
+
+@pytest.mark.mpi_skip()
+def test_psi_mode_5():
     np.random.seed(0)
     pm = PSIMode(dust_to_gas_ratio=3.0,
                  stokes_range=[1e-8, 0.1],
