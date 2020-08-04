@@ -57,18 +57,22 @@ class PowerBump():
 
         fac_b = bumpfac*self.fnn(self.aL)
         fac_b2 = -1/sigma**2
-        self.b = lambda a: fac_b*np.exp(fac_b2*np.log(a-(-1+aP))**2)
+        self.b = lambda a: fac_b*np.exp(fac_b2*(a-aP)**2)
+        # self.b = lambda a: fac_b*np.exp(fac_b2*np.log(a-(-1+aP))**2)
         self.mnorm = scipy.integrate.quad(self.mnn, amin, self.aR,
                                           epsrel=1e-15, limit=100,
                                           points=[self.get_discontinuity()])[0]
         self.epstot = epstot
 
     def get_discontinuity(self):
-        """ Find the  transition between bump aand powerlaw
+        """ Find the  transition between bump and powerlaw
         """
         # Need to solve fnn = b between aL and aP
         f = lambda x: self.fnn(x) - self.b(x)
-        return scipy.optimize.bisect(f, self.aL, self.aP)
+        if f(self.aL)*f(self.aP) > 0.0:
+            return self.aL
+        else:
+            return scipy.optimize.bisect(f, self.aL, self.aP)
 
     def mnn(self, a):
         # Make sure we can handle both vector and scalar a
@@ -159,7 +163,7 @@ class PowerBumpTail(PowerBump):
 
         fac_b = bumpfac*self.fnn(self.aL)
         fac_b2 = -1/sigma**2
-        self.b = lambda a: fac_b*np.exp(fac_b2*np.log(a-(-1+aP))**2)
+        self.b = lambda a: fac_b*np.exp(fac_b2*(a-aP)**2)
         self.mnorm = scipy.integrate.quad(self.mnn, amin, self.aR,
                                           epsrel=1e-15, limit=100,
                                           points=[aBT,
