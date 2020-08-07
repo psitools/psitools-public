@@ -2,7 +2,6 @@
 
 import numpy as np
 import warnings
-import matplotlib.pyplot as plt
 
 
 class TanhSinh():
