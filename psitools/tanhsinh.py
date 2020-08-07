@@ -49,40 +49,6 @@ class TanhSinh():
         """Scaling of interval to -1,1"""
         return 0.5*(x*(b - a) + b + a)
 
-    def check_for_asymptotes(self, func, a, b):
-        """Crude test to check for asymptotes in the function"""
-        nsamples = 1000
-        x = np.linspace(a, b, nsamples)
-        fv = func(x)
-        df = fv[1:] - fv[:-1]
-        zerosr = np.asarray(fv[:-2].real*fv[2:].real < 0.0)
-        sloperevr = np.asarray(df[:-1].real*df[1:].real < 0.0)
-        zerosi = np.asarray(fv[:-2].imag*fv[2:].imag < 0.0)
-        sloperevi = np.asarray(df[:-1].imag*df[1:].imag < 0.0)
-        #print(x.shape, fv.shape, df.shape)#, zeros.shape)
-        #print('sloperev',sloperev)
-        asymp = np.logical_or(
-                  np.logical_and(zerosr, sloperevr),
-                  np.logical_and(zerosi, sloperevi))
-        #print('asymp',asymp)
-        argasymp = np.nonzero(asymp)[0] + 1 # offset back to fv and x
-        if len(argasymp) > 0:
-            print('Found posible asymptotes in integrand')
-            #print(argasymp)
-            for i in argasymp:
-                print('x ',x[i-1:i+2])
-                print('f ',fv[i-1:i+2])
-        plt.plot(x,fv.real)
-        plt.ylabel('Re(func(x))')
-        plt.xlabel('x')
-        plt.show()
-        plt.plot(x,fv.imag)
-        plt.ylabel('Im(func(x))')
-        plt.xlabel('x')
-        plt.show()
-
-
-
     def integrate(self, func, a, b, tol=None):
         """Integrate function between a and b using tanh-sinh quadrature.
 
@@ -104,8 +70,6 @@ class TanhSinh():
 
         # Transform to interval -1, 1
         self.f = lambda x: 0.5*(b - a)*func(self.t(x, a, b))
-
-        self.check_for_asymptotes(func, a, b)
 
         # Make sure we do not reach the end points
         sel = np.asarray(self.t(self.xj, a, b) < b - self.eps).nonzero()
