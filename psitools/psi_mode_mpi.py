@@ -13,6 +13,8 @@ from .psi_mode import PSIMode
 class MpiScheduler:
     """Execute a set of runs with a list of parameters on MPI tasks.
     """
+    # To make shared memory a single pass, just set a max number of roots that will be returned.
+    maxroots = 4096
 
     def __init__(self, wall_start, wall_limit_total, verbose=True):
         """__init__ calls everything, this is execute-on-instantiate
@@ -125,11 +127,10 @@ class MpiScheduler:
             if cmd[0] == 'run':
                 if self.verbose:
                     print('Rank ', self.rank, ' args ', campaign[cmd[1]])
-                maxroots = 128
                 # array typecode l should mathc np.int32
                 sharednroots = multiprocessing.RawArray('l', 1)
-                sharedrootsreal = multiprocessing.RawArray('d', maxroots)
-                sharedrootsimag = multiprocessing.RawArray('d', maxroots)
+                sharedrootsreal = multiprocessing.RawArray('d', self.maxroots)
+                sharedrootsimag = multiprocessing.RawArray('d', self.maxroots)
                 p = multiprocessing.Process(target=self.runcompute,
                                             args=(campaign[cmd[1]],
                                                   sharednroots,
@@ -165,6 +166,10 @@ class MpiScheduler:
             self.pm = PSIMode(**PSIModeArgs)
             self.PSIModeArgs = PSIModeArgs
         roots = self.pm.calculate(**args['calculate'])
+        if len(roots) > self.maxroots:
+            warnings.warn('Found {:d} roots, dicarding roots past {:d}'
+                          .format(len(roots), self.maxroots))
+            roots = roots[:self.maxroots]
         nroots = np.frombuffer(sharednroots, dtype=np.int64)
         np.copyto(nroots, np.array([len(roots)], dtype=np.int64))
         if len(roots) > 0:
