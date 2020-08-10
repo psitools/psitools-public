@@ -34,4 +34,8 @@ $ pytest --pyargs psitools
 To do the MPI tests, run under MPI. The pytest output is a bit of a mess,
 but something abould eventually show up.
 
-$ mpirun-mpich-mp -np 5 python -m pytest --pyargs psitools --with-mpi 
+$ mpirun -np 5 python -m pytest --pyargs psitools --with-mpi 
+
+To run a specifric test, do something like:
+
+$ mpirun -np 4 python -m pytest --pyargs psitools --with-mpi -s -k "test_psi_grid_refine_0"

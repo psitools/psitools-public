@@ -87,9 +87,9 @@ def test_PB_0(tmpdir):
             'prefix': tmpdir,
             'alpha': None})
     #assert ans == 1
-    ref = np.array((-0.029005533253048926+0.15419664580434422j,
-                    -0.030041404593872712+0.15409922719380723j,
-                    -0.03053511020161884+0.15404645287572324j))
+    ref = np.array((-0.04298854605814622+0.13764347038117714j,
+                    -0.04401630203296608+0.13752657929813472j,
+                    -0.04454892638085971+0.1374699433910088j))
     npt.assert_allclose(ans.real, ref.real, rtol=rtol)
     npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
 
@@ -112,9 +112,9 @@ def test_PB_1(tmpdir):
             'alpha': 4e-8,
             'dust_pressure': True})
     ref = np.array(
-                   (0.1345493907813624-0.01672903776471424j,
-                    0.13351780908580427-0.01698450431931421j,
-                    0.1330210694554548-0.01710878302411626j))
+                   (0.13348830950613355-0.05168309862307213j,
+                    0.13242757784498815-0.05197300068236282j,
+                    0.13188176480295802-0.052123120488923765j))
     npt.assert_allclose(ans.real, ref.real, rtol=rtol)
     npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
 
@@ -135,9 +135,10 @@ def test_PB_2(tmpdir):
              'gridding': 'logarithmic',
              'prefix': tmpdir,
              'alpha': 4e-8})
-    ref = np.array((0.011841681674382+0.013826145093578386j,
-                    0.01162116067659627+0.016714209705801227j,
-                    0.012172444373405152+0.01725321235421818j))
+    ref = np.array(
+                   (-0.0024531728633354326-0.010686752395676097j,
+                    -0.0014217405603043848-0.008240758021806682j,
+                    -0.0014180550135648997-0.007518473660759821j))
     npt.assert_allclose(ans.real, ref.real, rtol=rtol)
     npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
 

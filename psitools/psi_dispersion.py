@@ -2,12 +2,11 @@
 
 import numpy as np
 import scipy.integrate as integrate
-import scipy.optimize as opt
 
 import warnings
 
 from .sizedensity import SizeDensity
-from .tanhsinh import TanhSinh
+
 
 class PSIDispersion():
     """Class holding the full PSI dispersion relation.
@@ -117,7 +116,8 @@ class PSIDispersion():
         Sigma = lambda x: self.size_density(x)
         a = np.log(s_min)
         b = 0
-        poles = np.log(self.poles)
+        # shift the poles list into the same space, awkward and it's a list
+        poles = list(np.log(np.array(self.poles)/self.taumax))
 
         if self.tanhsinh_integrator is not None:
             f = lambda u: g(t*np.exp(u))*np.exp(u)*Sigma(np.exp(u))

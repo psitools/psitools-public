@@ -2,7 +2,6 @@
 
 import numpy as np
 import scipy.optimize as opt
-import warnings
 try:
     import matplotlib.pyplot as plt
 except ImportError as error:
@@ -11,6 +10,11 @@ except ImportError as error:
 
 from . import psi_dispersion as psid
 from . import complex_roots as cr
+
+def guess_domain_size(x):
+    '''Determines guess_roots zoom-in domain size.
+    May be used from other modules.'''
+    return min((1e-3, np.abs(x.imag)*4))
 
 
 class PSIMode():
@@ -72,6 +76,8 @@ class PSIMode():
 
         self.n_function_call = 0
 
+        self.guess_domain_size = guess_domain_size
+
         # AAA rational approximation
         self.ra = cr.RationalApproximation(self.domain,
                                            tol=tol,
@@ -113,12 +119,9 @@ class PSIMode():
 
         # Put zoom domain around guessed roots
         for centre in guess_roots:
-#            self.add_extra_domain(extra_domain_size=[0.001, 0.001],
-#                                  centre=centre)
-           # If the domain is too small it is hard to track the 1e-6
-           # growth of secular modes near the axis.
-           domain_size = min((1e-3, np.abs(centre.imag)*4))
-           self.add_extra_domain(extra_domain_size=[domain_size, domain_size],
+            self.add_extra_domain(extra_domain_size=
+                                    [self.guess_domain_size(centre),
+                                     self.guess_domain_size(centre)],
                                   centre=centre)
 
         for n in range(0, self.max_zoom_level + 1):
