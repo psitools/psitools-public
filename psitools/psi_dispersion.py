@@ -116,7 +116,7 @@ class PSIDispersion():
         Sigma = lambda x: self.size_density(x)
         a = np.log(s_min)
         b = 0
-        # shoft the poles list intot he same space, akward and it's a list
+        # shift the poles list into the same space, awkward and it's a list
         poles = list(np.log(np.array(self.poles)/self.taumax))
 
         if self.tanhsinh_integrator is not None:
