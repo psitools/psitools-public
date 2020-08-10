@@ -6,15 +6,13 @@ import time
 import numpy as np
 import collections
 from mpi4py import MPI
-import multiprocessing
 from .psi_mode import PSIMode
+import dill
 
 
 class MpiScheduler:
     """Execute a set of runs with a list of parameters on MPI tasks.
     """
-    # To make shared memory a single pass, just set a max number of roots that will be returned.
-    maxroots = 4096
 
     def __init__(self, wall_start, wall_limit_total, verbose=True):
         """__init__ calls everything, this is execute-on-instantiate
@@ -64,6 +62,7 @@ class MpiScheduler:
             if finished[0] == 'finished':
                 if self.verbose:
                     print(finished[1], 'result ', finished[2])
+
                 finishedruns[finished[1]] = finished[2]
             elif finished[0] == 'running':
                 # add this run to back of queue
@@ -127,23 +126,9 @@ class MpiScheduler:
             if cmd[0] == 'run':
                 if self.verbose:
                     print('Rank ', self.rank, ' args ', campaign[cmd[1]])
-                # array typecode l should mathc np.int32
-                sharednroots = multiprocessing.RawArray('l', 1)
-                sharedrootsreal = multiprocessing.RawArray('d', self.maxroots)
-                sharedrootsimag = multiprocessing.RawArray('d', self.maxroots)
-                p = multiprocessing.Process(target=self.runcompute,
-                                            args=(campaign[cmd[1]],
-                                                  sharednroots,
-                                                  sharedrootsreal,
-                                                  sharedrootsimag))
-                p.start()
-                p.join()
-                result = np.zeros(sharednroots[0], dtype=np.complex)
-                result.real = sharedrootsreal[:sharednroots[0]]
-                result.imag = sharedrootsimag[:sharednroots[0]]
                 # These are all non-blocking so we can get interrupted
                 # by a shutdown if needed.
-                #result = self.runcompute(campaign[cmd[1]])
+                result = self.runcompute(campaign[cmd[1]])
                 request = self.comm.isend(['finished', cmd[1], result],
                                           dest=0, tag=2)
             elif cmd[0] == 'exit':
@@ -154,7 +139,7 @@ class MpiScheduler:
         if self.verbose:
             print('Exit rank ', self.rank, flush=True)
 
-    def runcompute(self, args, sharednroots, sharedrootsreal, sharedrootsimag):
+    def runcompute(self, args):
         """The call to PSIMode."""
         if 'random_seed' in args:
             np.random.seed(args.pop('random_seed'))
@@ -166,55 +151,16 @@ class MpiScheduler:
             self.pm = PSIMode(**PSIModeArgs)
             self.PSIModeArgs = PSIModeArgs
         roots = self.pm.calculate(**args['calculate'])
-        if len(roots) > self.maxroots:
-            warnings.warn('Found {:d} roots, dicarding roots past {:d}'
-                          .format(len(roots), self.maxroots))
-            roots = roots[:self.maxroots]
-        nroots = np.frombuffer(sharednroots, dtype=np.int64)
-        np.copyto(nroots, np.array([len(roots)], dtype=np.int64))
-        if len(roots) > 0:
-            realpart = np.frombuffer(sharedrootsreal, dtype=np.float64)
-            np.copyto(realpart[:len(roots)], roots.real)
-            imagpart = np.frombuffer(sharedrootsimag, dtype=np.float64)
-            np.copyto(imagpart[:len(roots)], roots.imag)
-        # return roots.copy()
+        if self.verbose and len(roots) > 5:
+            self.pm.args = args
+            self.pm.roots = roots
+            dill.dump(self.pm, open('toomanyroots_{:04d}.pickle'.format(self.rank), 'wb'))
+        return roots.copy()
 
 
 class DispersionRelationMpiScheduler(MpiScheduler):
     """Class for computing  values of the dispersion relation.
     """
-
-    def slaveprocess(self, campaign):
-        """Execution of a MPI slave process, waits for commands from master,
-           executes chunks of work from campaign
-        """
-        if self.verbose:
-            print('Slave Process rank ', self.rank, flush=True)
-
-        # cache the object, need here to know none have been generated
-        self.PSIModeArgs = {}
-
-        exitFlag = False
-        while (time.time() < self.wall_start + self.wall_limit_total
-               and not exitFlag):
-            # Post a blocking recv, to wait for
-            # an assignment or exit from rank==0
-            cmd = self.comm.recv(source=0, tag=1)
-            if cmd[0] == 'run':
-                if self.verbose:
-                    print('Rank ', self.rank, ' args ', campaign[cmd[1]])
-                # Try to get away without multiprocessing.
-                # Hopefully the garbage collector will work well enough
-                result = self.runcompute(campaign[cmd[1]])
-                request = self.comm.isend(['finished', cmd[1], result],
-                                          dest=0, tag=2)
-            elif cmd[0] == 'exit':
-                exitFlag = True
-            else:
-                request = self.comm.isend(['waiting'], dest=0, tag=2)
-
-        if self.verbose:
-            print('Exit rank ', self.rank, flush=True)
 
     def runcompute(self, args):
         PSIModeArgs = args['__init__']

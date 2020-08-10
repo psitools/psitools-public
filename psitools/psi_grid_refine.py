@@ -3,12 +3,14 @@
 # maps
 #
 import numpy as np
+import scipy.cluster.vq
 import time
 import h5py
 import copy
 import tracemalloc
 from mpi4py import MPI
 from psitools import psi_mode_mpi
+from psitools.psi_mode import guess_domain_size
 
 
 def spreadgrid(old, const_axis=0):
@@ -60,6 +62,20 @@ def prune_eps(values, epsilon=1e-5):
             uniques.append(v)
 
     return np.array(uniques)
+
+
+def prune_kmeans(guess_roots):
+    pruned_guesses = guess_roots
+    if len(guess_roots) > 2:
+        obs = np.vstack((guess_roots.real, guess_roots.imag)).transpose()
+        guess1, mdist1 = scipy.cluster.vq.kmeans(obs, 1)
+        guess2, mdist2 = scipy.cluster.vq.kmeans(obs, 2)
+        # Decide if one or two clusters, based on a crude coomparison
+        if mdist1 < guess_domain_size(guess1[0,0] +1j*guess1[0,1]):
+            pruned_guesses = guess1[:,0] +1j*guess1[:,1]
+        else:
+            pruned_guesses = guess2[:,0] +1j*guess2[:,1]
+    return pruned_guesses
 
 
 class PSIGridRefiner:
@@ -221,7 +237,12 @@ class PSIGridRefiner:
                 args['__init__']['max_zoom_domains'] = 0
                 args['calculate']['wave_number_x'] = Kxgrid[iz, ix]
                 args['calculate']['wave_number_z'] = Kzgrid[iz, ix]
-                args['calculate']['guess_roots'] = prune_eps(near_roots)
+                # It is a little non-optimal to do k-means on every proc for every
+                # list...
+                args['calculate']['guess_roots'] = prune_kmeans(prune_eps(near_roots))
+                if self.root and self.verbose and len(prune_eps(near_roots)) > 2:
+                    print('Original guess_roots ', prune_eps(near_roots))
+                    print('K-means pruned ', prune_kmeans(prune_eps(near_roots)))
                 arglist.append(args)
                 newrungrid[iz, ix] = offset + iarg - rungrid[iz, ix]
                 firstiarg = iarg

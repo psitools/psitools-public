@@ -2,6 +2,7 @@
 
 import numpy as np
 import scipy.optimize as opt
+import scipy.cluster.vq
 import warnings
 try:
     import matplotlib.pyplot as plt
@@ -11,6 +12,11 @@ except ImportError as error:
 
 from . import psi_dispersion as psid
 from . import complex_roots as cr
+
+def guess_domain_size(x):
+    '''Determines guess_roots zoom-in domain size.
+    May be used from other modules.'''
+    return min((1e-3, np.abs(x.imag)*4))
 
 
 class PSIMode():
@@ -72,6 +78,8 @@ class PSIMode():
 
         self.n_function_call = 0
 
+        self.guess_domain_size = guess_domain_size
+
         # AAA rational approximation
         self.ra = cr.RationalApproximation(self.domain,
                                            tol=tol,
@@ -111,14 +119,26 @@ class PSIMode():
             self.z_sample = np.concatenate((self.z_sample, rect.points))
             self.f_sample = np.concatenate((self.f_sample, rect.f_points))
 
+#        # No use having too many guesses, use k-means to  
+#        pruned_guesses = guess_roots
+#        if len(guess_roots) > 2:
+#            obs = np.vstack((guess_roots.real, guess_roots.imag)).transpose()
+#            guess1, mdist1 = scipy.cluster.vq.kmeans(obs, 1)
+#            guess2, mdist2 = scipy.cluster.vq.kmeans(obs, 2)
+#            # Decide if one or two clusters, based on a crude coomparison
+#            if mdist1 < domain_size(guess1[0,0] +1j*guess1[0,1]):
+#                pruned_guesses = guess1[:,0] +1j*guess1[:,1]
+#            else:
+#                pruned_guesses = guess2[:,0] +1j*guess2[:,1]
+#            if self.verbose_flag:
+#                print('Original guess_roots', guess_roots)
+#                print('pruned_guesses', pruned_guesses)
+
         # Put zoom domain around guessed roots
-        for centre in guess_roots:
-#            self.add_extra_domain(extra_domain_size=[0.001, 0.001],
-#                                  centre=centre)
-           # If the domain is too small it is hard to track the 1e-6
-           # growth of secular modes near the axis.
-           domain_size = min((1e-3, np.abs(centre.imag)*4))
-           self.add_extra_domain(extra_domain_size=[domain_size, domain_size],
+        for centre in guess_roots: 
+            self.add_extra_domain(extra_domain_size=
+                                    [self.guess_domain_size(centre),
+                                     self.guess_domain_size(centre)],
                                   centre=centre)
 
         for n in range(0, self.max_zoom_level + 1):
