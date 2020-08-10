@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import numpy as np
+import warnings
 
 
 class TanhSinh():
@@ -62,7 +63,9 @@ class TanhSinh():
             tol = self.eps
         else:
             if tol < self.eps:
-                print('Requested tolerance too small, setting tol = ', self.eps)
+                warnings.warn(
+                  'TanhSinh: Requested tolerance too small, setting tol = {:e}'
+                  .format(self.eps))
                 tol = self.eps
 
         # Transform to interval -1, 1

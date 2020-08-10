@@ -37,6 +37,7 @@ class PowerBump():
         Dust size distributions in coagulation/fragmentation equilibrium:
         numerical solutions and analytical fits. Astronomy and Astrophysics,
         525, 11. http://doi.org/10.1051/0004-6361/201015228
+
         """
         self.amin = amin
         self.aP = aP
