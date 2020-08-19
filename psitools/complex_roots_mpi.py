@@ -146,5 +146,10 @@ class MpiScheduler:
         self.disp = lambda z: self.dispersion(z,
                                               **args['dispersion'])
         rect = ClosedPath(self.disp, args['z_list'])
-        n_roots = rect.count_roots()
+        try:
+            n_roots = rect.count_roots(**args['count_roots'])
+        except RuntimeError as err:
+            print('complex_roots_mpi caught RuntimeError in count_roots', err)
+            print('Likely means the max iterations was exceeded.')
+            n_roots = -666
         return n_roots
