@@ -71,16 +71,16 @@ def prune_kmeans(guess_roots):
         guess1, mdist1 = scipy.cluster.vq.kmeans(obs, 1)
         guess2, mdist2 = scipy.cluster.vq.kmeans(obs, 2)
         # Decide if one or two clusters, based on a crude coomparison
-        if mdist1 < guess_domain_size(guess1[0,0] +1j*guess1[0,1]):
-            pruned_guesses = guess1[:,0] +1j*guess1[:,1]
+        if mdist1 < guess_domain_size(guess1[0, 0] + 1j*guess1[0, 1]):
+            pruned_guesses = guess1[:, 0] + 1j*guess1[:, 1]
         else:
-            pruned_guesses = guess2[:,0] +1j*guess2[:,1]
+            pruned_guesses = guess2[:, 0] + 1j*guess2[:, 1]
     return pruned_guesses
 
 
 class PSIGridRefiner:
     def __init__(self, batchname, baseargs=None, nbase=(16, 16),
-                 reruns=3, verbose=False):
+                 reruns=3, verbose=False, krange=(-1.0, 3.0)):
         if baseargs:
             self.baseargs = baseargs
         else:
@@ -106,6 +106,7 @@ class PSIGridRefiner:
                 'random_seed': 2}
 
         self.nbase = nbase
+        self.krange = krange
         self.reruns = reruns
         self.batchname = batchname
         self.datafile_hdf5 = batchname+'.hdf5'
@@ -129,9 +130,11 @@ class PSIGridRefiner:
 
     def run_basegrid(self):
         # Set up the list of runs
-        dK = 4/(self.nbase[1]-3)
-        Kxaxis = np.logspace(-1-dK, 3+dK, self.nbase[1])
-        Kzaxis = np.logspace(-1-dK, 3+dK, self.nbase[0])
+        dK = (self.krange[1]-self.krange[0])/(self.nbase[1]-3)
+        Kxaxis = np.logspace(self.krange[0]-dK, self.krange[1]+dK,
+                             self.nbase[1])
+        Kzaxis = np.logspace(self.krange[0]-dK, self.krange[1]+dK,
+                             self.nbase[0])
         Kzgrid, Kxgrid = np.meshgrid(Kzaxis, Kxaxis, indexing='ij')
         rungrid = np.zeros(Kxgrid.shape, dtype=np.int)
         nguess = np.zeros(Kxgrid.shape, dtype=np.int)
@@ -189,7 +192,6 @@ class PSIGridRefiner:
             if self.sweep_last_grid() == 0:
                 break
 
-
     def sweep_last_grid(self):
         if self.rank == 0:
             tracemalloc.start()
@@ -237,12 +239,15 @@ class PSIGridRefiner:
                 args['__init__']['max_zoom_domains'] = 0
                 args['calculate']['wave_number_x'] = Kxgrid[iz, ix]
                 args['calculate']['wave_number_z'] = Kzgrid[iz, ix]
-                # It is a little non-optimal to do k-means on every proc for every
-                # list...
-                args['calculate']['guess_roots'] = prune_kmeans(prune_eps(near_roots))
-                if self.root and self.verbose and len(prune_eps(near_roots)) > 2:
+                # It is a little non-optimal to do k-means on every
+                # proc for every list...
+                args['calculate']['guess_roots'] = \
+                    prune_kmeans(prune_eps(near_roots))
+                if self.root and self.verbose \
+                   and len(prune_eps(near_roots)) > 2:
                     print('Original guess_roots ', prune_eps(near_roots))
-                    print('K-means pruned ', prune_kmeans(prune_eps(near_roots)))
+                    print('K-means pruned ',
+                          prune_kmeans(prune_eps(near_roots)))
                 arglist.append(args)
                 newrungrid[iz, ix] = offset + iarg - rungrid[iz, ix]
                 firstiarg = iarg
