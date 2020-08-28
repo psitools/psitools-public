@@ -384,7 +384,8 @@ class PSIDispersion():
             #f = lambda x: np.real(w[i]) - self.kx*self.ux(x)
 
             # List of poles from size density; may be empty
-            self.poles = list(self.size_density.poles)
+            # Scale to taumax
+            self.poles = list(np.array(self.size_density.poles)/self.taumax)
 
             # Polynomial solving Re(w) - Kx*ux(x) = 0
             coeff = [self.base_poly[0] + np.real(w[i])/self.kx,
