@@ -116,8 +116,7 @@ class PSIDispersion():
         Sigma = lambda x: self.size_density(x)
         a = np.log(s_min)
         b = 0
-        # shift the poles list into the same space, awkward and it's a list
-        poles = list(np.log(np.array(self.poles)/self.taumax))
+        poles = np.log(self.poles)
 
         if self.tanhsinh_integrator is not None:
             f = lambda u: g(t*np.exp(u))*np.exp(u)*Sigma(np.exp(u))
@@ -384,7 +383,8 @@ class PSIDispersion():
             #f = lambda x: np.real(w[i]) - self.kx*self.ux(x)
 
             # List of poles from size density; may be empty
-            self.poles = list(self.size_density.poles)
+            # Scale to taumax
+            self.poles = list(np.array(self.size_density.poles)/self.taumax)
 
             # Polynomial solving Re(w) - Kx*ux(x) = 0
             coeff = [self.base_poly[0] + np.real(w[i])/self.kx,
