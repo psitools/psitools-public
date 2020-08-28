@@ -230,7 +230,10 @@ class PSIGridRefiner:
                 near_roots += get_if(finishedruns, rungrid[iz, ix+1])
             if ix < Kxgrid.shape[1]-1 and iz < Kzgrid.shape[0]-1:
                 near_roots += get_if(finishedruns, rungrid[iz+1, ix+1])
-            near_roots = prune_eps(near_roots)
+            #prune based on the local growth rate
+            if len(near_roots) > 0:
+                near_roots = prune_eps(near_roots,
+                                 epsilon=np.array(near_roots).imag.mean()*1e-4)
             foundguesses = len(near_roots)
             # rerun only is more guesses available
             if foundguesses > nguess[iz, ix]:
@@ -242,12 +245,14 @@ class PSIGridRefiner:
                 # It is a little non-optimal to do k-means on every
                 # proc for every list...
                 args['calculate']['guess_roots'] = \
-                    prune_kmeans(prune_eps(near_roots))
-                if self.root and self.verbose \
-                   and len(prune_eps(near_roots)) > 2:
-                    print('Original guess_roots ', prune_eps(near_roots))
-                    print('K-means pruned ',
-                          prune_kmeans(prune_eps(near_roots)))
+                    near_roots
+                    #K-means pruning seems to be too agressive
+                    #prune_kmeans(prune_eps(near_roots))
+                #if self.root and self.verbose \
+                #   and len(prune_eps(near_roots)) > 2:
+                #    print('Original guess_roots ', prune_eps(near_roots))
+                #    print('K-means pruned ',
+                #          prune_kmeans(prune_eps(near_roots)))
                 arglist.append(args)
                 newrungrid[iz, ix] = offset + iarg - rungrid[iz, ix]
                 firstiarg = iarg
