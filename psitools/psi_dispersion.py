@@ -39,7 +39,11 @@ class PSIDispersion():
         if self.size_density is None:
             # Create power law SizeDensity
             sigma = lambda x: np.power(x, 3 - size_distribution_power)
-            self.size_density = SizeDensity(sigma, stokes_range)
+            sigma_integral = (stokes_range[0]**(4.0-size_distribution_power)
+                              -stokes_range[1]**(4.0-size_distribution_power))\
+                             / (size_distribution_power - 4.0)
+            self.size_density = SizeDensity(sigma, stokes_range,
+                                            sigma_integral=sigma_integral)
 
         self.poles = list(self.size_density.poles)
         self.tanhsinh_integrator = tanhsinh_integrator

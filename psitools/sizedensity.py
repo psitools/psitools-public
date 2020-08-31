@@ -10,12 +10,15 @@ class SizeDensity():
         sigma (callable): size density function
         size_range: size range of the size density function
     """
-    def __init__(self, sigma, size_range):
+    def __init__(self, sigma, size_range, sigma_integral=None):
         # sigma = sigma(a) between amin and amax
         self.amin = size_range[0]
         self.amax = size_range[1]
 
-        self.rhod = integrate.quad(sigma, self.amin, self.amax)[0]
+        if sigma_integral is None:
+            self.rhod = integrate.quad(sigma, self.amin, self.amax)[0]
+        else:
+            self.rhod = sigma_integral
         self.f = lambda x: self.amax*sigma(self.amax*x)/self.rhod
 
         # Empty list of poles
