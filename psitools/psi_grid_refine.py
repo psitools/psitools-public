@@ -130,11 +130,14 @@ class PSIGridRefiner:
 
     def run_basegrid(self):
         # Set up the list of runs
-        dK = (self.krange[1]-self.krange[0])/(self.nbase[1]-3)
-        Kxaxis = np.logspace(self.krange[0]-dK, self.krange[1]+dK,
+        Kxaxis = np.logspace(self.krange[0], self.krange[1],
                              self.nbase[1])
-        Kzaxis = np.logspace(self.krange[0]-dK, self.krange[1]+dK,
+        dK = Kxaxis[1] - Kxaxis[0]
+        Kxaxis = np.hstack(([Kxaxis[0]-dK], Kxaxis, [Kxaxis[1]+dK]))
+        Kzaxis = np.logspace(self.krange[0], self.krange[1],
                              self.nbase[0])
+        dK = Kzaxis[1] - Kzaxis[0]
+        Kzaxis = np.hstack(([Kzaxis[0]-dK], Kzaxis, [Kzaxis[1]+dK]))
         Kzgrid, Kxgrid = np.meshgrid(Kzaxis, Kxaxis, indexing='ij')
         rungrid = np.zeros(Kxgrid.shape, dtype=np.int)
         nguess = np.zeros(Kxgrid.shape, dtype=np.int)
