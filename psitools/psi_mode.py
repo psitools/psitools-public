@@ -417,11 +417,15 @@ class PSIMode():
             # If not, continue for as long as it takes
             z = opt.root_scalar(self.disp, method='secant',
                                 x0=w0[i], x1=w1,
-                                maxiter=initial_iterations)
+                                maxiter=initial_iterations,
+                                xtol=np.min(
+                                     np.hstack([[1.48e-8],
+                                                np.abs(w0.imag*1e-5)])))
             self.n_function_call += z.function_calls
             self.log_print("Result after initial iterations:")
             self.log_print(z)
-            self.log_print("|z - z0|/|z0| = {}".format(np.abs(z.root - w0[i])/np.abs(w0[i])))
+            self.log_print("|z - z0|/|z0| = {}".format(
+                           np.abs(z.root - w0[i])/np.abs(w0[i])))
 
             if (z.converged == False and
                 np.abs(z.root - w0[i])/np.abs(w0[i]) < 1 and
@@ -435,7 +439,10 @@ class PSIMode():
 
                 z = opt.root_scalar(self.disp, method='secant',
                                     x0=w0[i], x1=w1,
-                                    maxiter=max_iter)
+                                    maxiter=max_iter,
+                                    xtol=np.min(
+                                         np.hstack([[1.48e-8],
+                                                    np.abs(w0.imag*1e-5)])))
                 self.n_function_call += z.function_calls
                 self.log_print(z)
             else:

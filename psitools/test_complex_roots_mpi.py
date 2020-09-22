@@ -45,7 +45,8 @@ def test_complex_roots_mpi_0():
                             'wave_number_x': K[0],
                             'wave_number_z': K[1],
                             'viscous_alpha': 0.0},
-                        'z_list': z_list
+                        'z_list': z_list,
+                        'count_roots': {'tol': 0.1}
                         })
 
     # get the MPI execution object
