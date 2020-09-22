@@ -50,7 +50,7 @@ def test_psi_grid_refine_0():
                              'wave_number_z': None,
                              'guess_roots': []},
                  'random_seed': 2}
-    gr = PSIGridRefiner(batchname, baseargs=baseargs, nbase=(2, 2), reruns=1)
+    gr = PSIGridRefiner(batchname, baseargs=baseargs, nbase=(3, 3), reruns=1)
     gr.run_basegrid()
     gr.fill_in_grid()
 

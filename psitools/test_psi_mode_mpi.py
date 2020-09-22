@@ -62,25 +62,25 @@ def test_psi_mode_mpi_0():
             for val in finishedruns[run]:
                 print(' {:+15.14e} {:+15.14e}j'.format(val.real, val.imag))
 # a good output
-# finishedruns is
-# 2:
-# 3:
-# -1.00487995396850e+00 +8.94641471307505e-04j
-# 0:
-# 1:
-# 5:
-# 6:
-#  -1.00492456189630e+00 +9.03864208351477e-04j
-# 8:
-# 4:
-# 7:
-        npt.assert_allclose(finishedruns[3].real, [-1.00487995396850e+00],
+#finishedruns is
+#2:
+#3:
+# -1.00487970465063e+00 +8.94632567125043e-04j
+#0:
+#1:
+#5:
+#6:
+# -1.00492431244162e+00 +9.03855503901244e-04j
+#4:
+#8:
+#7:
+        npt.assert_allclose(finishedruns[3].real, [-1.00487970465063e+00],
                             rtol=rtol)
-        npt.assert_allclose(finishedruns[3].imag, [+8.94641471307505e-04],
+        npt.assert_allclose(finishedruns[3].imag, [+8.94632567125043e-04],
                             rtol=rtol)
-        npt.assert_allclose(finishedruns[6].real, [-1.00492456189630e+00],
+        npt.assert_allclose(finishedruns[6].real, [-1.00492431244162e+00],
                             rtol=rtol)
-        npt.assert_allclose(finishedruns[6].imag, [+9.03864208351477e-04],
+        npt.assert_allclose(finishedruns[6].imag, [+9.03855503901244e-04],
                             rtol=rtol)
 
 
@@ -132,22 +132,22 @@ def test_psi_mode_mpi_1():
             print('{:d}: '.format(run))
             print(' {:+15.14e} {:+15.14e}j'.format(
                   finishedruns[run].real, finishedruns[run].imag))
-
-# 0:
-# -1.72721516816478e+08 +5.32417172686456e+07j
-# 1:
-# -1.01101748168798e+08 +1.70115997051966e+07j
-# 2:
-# -1.41019417999197e+08 +1.07996337299929e+08j
-# 3:
-# -8.18799484396433e+07 +8.84422553318089e+07j
-        npt.assert_allclose(finishedruns[0].real, [-1.72721516816478e+08],
+#finishedruns is
+#2:
+# -1.41025978843637e+08 +1.08008841143562e+08j
+#1:
+# -1.01104322248054e+08 +1.70121606122589e+07j
+#0:
+# -1.72733464670814e+08 +5.32484293672187e+07j
+#3:
+# -8.18797751107521e+07 +8.84518043425989e+07j
+        npt.assert_allclose(finishedruns[0].real, [-1.72733464670814e+08],
                             rtol=rtol)
-        npt.assert_allclose(finishedruns[0].imag, [+5.32417172686456e+07],
+        npt.assert_allclose(finishedruns[0].imag, [+5.32484293672187e+07],
                             rtol=rtol)
-        npt.assert_allclose(finishedruns[3].real, [-8.18799484396433e+07],
+        npt.assert_allclose(finishedruns[3].real, [-8.18797751107521e+07],
                             rtol=rtol)
-        npt.assert_allclose(finishedruns[3].imag, [+8.84422553318089e+07],
+        npt.assert_allclose(finishedruns[3].imag, [+8.84518043425989e+07],
                             rtol=rtol)
 
     comm = MPI.COMM_WORLD
