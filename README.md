@@ -29,7 +29,7 @@ Please cite the Zenodo record and appropriate papers if using in a publication.
 One way run functional tests, with a virtualenv:
 
     $ python -m venv --system-site-packages test-psitools/
-    $ . test-psitools/bin/actiavte
+    $ . test-psitools/bin/activate
 
 or use the included conda specification:
 
@@ -67,14 +67,13 @@ To run a specifric test, do something like:
 
 ## Authors / Contributors:
 * Colin McNally <colin@colinmcnally.ca>
-* Sijme-Jan Paardekooper <s.j.paardkooper@qmul.ac.uk>
+* Sijme-Jan Paardekooper <s.j.paardekooper@qmul.ac.uk>
 * Francesco Lovascio <f.lovascio@qmul.ac.uk>
 
 
 ## License
 
 Copyright 2020 Colin McNally, Sijme-Jan Paardekooper, Francesco Lovascio
-colin@colinmcnally.ca, s.j.paardekooper@qmul.ac.uk, f.lovascio@qmul.ac.uk
 
 This file is part of psitools.
 
