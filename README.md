@@ -33,8 +33,8 @@ One way run functional tests, with a virtualenv:
 
 or use the included conda specification:
 
-    $ conda env create -f anaconda_environments/STES_environment.yml
-    $ conda activate STES
+    $ conda env create -f anaconda_environments/STE_environment.yml
+    $ conda activate STE
 
 Then install psitools, by directing pip (not system pip, the one inside the 
 above environment) to the location of the setup.py
