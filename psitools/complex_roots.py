@@ -1,4 +1,23 @@
 #!/usr/bin/python
+#
+# Copyright 2020 Colin McNally, Sijme-Jan Paardekooper, Francesco Lovascio
+#    colin@colinmcnally.ca, s.j.paardekooper@qmul.ac.uk, f.lovascio@qmul.ac.uk
+#
+#    This file is part of psitools.
+#
+#    psitools is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    psitools is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with psitools.  If not, see <https://www.gnu.org/licenses/>.
+#
 
 import numpy as np
 import scipy as sp
@@ -89,7 +108,7 @@ class RationalApproximation():
             self.maskF[i] = 1
             residuals = self.calc_weights_residuals()
         except np.linalg.LinAlgError as err:
-            warnings.warn("LinAlgError occured in RationalApproximation." 
+            warnings.warn("LinAlgError occured in RationalApproximation."
                           + "calc_weights_residuals: {}".format(str(err)))
             # Unset maskF as point was not used
             self.maskF[i] = 0
