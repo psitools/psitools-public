@@ -26,12 +26,7 @@ Please cite the Zenodo record and appropriate papers if using in a publication.
 
 ## Testing
 
-One way run functional tests, with a virtualenv:
-
-    $ python -m venv --system-site-packages test-psitools/
-    $ . test-psitools/bin/activate
-
-or use the included conda specification:
+One way run functional tests, using the included conda specification:
 
     $ conda env create -f anaconda_environments/STE_environment.yml
     $ conda activate STE
@@ -49,27 +44,35 @@ Before trying to run tests, deactivate and reactivate the virtualenv or conda en
 or 
 
     $ conda deactivate
-    $ conda activate STES
+    $ conda activate STE
 
 Then try pytest
 
-    $ pytest --pyargs psitools -m "not mpi"
+    $ pytest -m "not mpi" path/to/psitools-public
 
-To do the MPI tests, run under MPI with pytest-mpi. pytest-mpi in the current version has slightly messy output, but something should eventually show up.
+To do the MPI tests, run under MPI with pytest-mpi, which you will probably need to install via pip. pytest-mpi in the current version has repeated output, but something should eventually show up.
 
-    $ mpirun -np 5 python -m pytest --pyargs psitools --with-mpi
+    $ mpirun -np 5 python -m pytest --pyargs psitools --with-mpi path/to/psitools-public
 
-To run a specifric test, do something like:
+To run a specific test, do something like:
 
     $ mpirun -np 4 python -m pytest --pyargs psitools --with-mpi \
-        -s -k "test_psi_grid_refine_0"
+        -s -k "test_psi_grid_refine_0" path/to/psitools-public
+        
+Or, testing with a virtualenv, something like:
 
+    $ python -m venv --system-site-packages test-psitools/
+    $ . test-psitools/bin/activate
+    $ pip install -e ~/path/to/repo
+    $ deactivate
+    $ . test-psitools/bin/activate
+
+And continue as before.
 
 ## Authors / Contributors:
 * Colin McNally <colin@colinmcnally.ca>
 * Sijme-Jan Paardekooper <s.j.paardekooper@qmul.ac.uk>
 * Francesco Lovascio <f.lovascio@qmul.ac.uk>
-
 
 ## License
 
