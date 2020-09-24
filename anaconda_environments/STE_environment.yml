@@ -4,15 +4,19 @@ channels:
   - defaults
 dependencies:
   - _libgcc_mutex=0.1=main
+  - attrs=20.2.0=py_0
   - blas=1.0=mkl
-  - ca-certificates=2020.6.24=0
+  - ca-certificates=2020.7.22=0
   - certifi=2020.6.20=py38_0
   - dill=0.3.2=py_0
   - h5py=2.10.0=py38h7918eee_0
   - hdf5=1.10.4=hb1b8bf9_0
+  - iniconfig=1.0.1=py_0
   - intel-openmp=2020.1=217
+  - intelpython=2020.1=0
   - ld_impl_linux-64=2.33.1=h53a641e_7
   - libedit=3.1.20191231=h7b6447c_0
+  - libffi=3.2.1=11
   - libgcc-ng=9.1.0=hdf63c60_0
   - libgfortran-ng=7.3.0=hdf63c60_0
   - libstdcxx-ng=9.1.0=hdf63c60_0
@@ -20,13 +24,21 @@ dependencies:
   - mkl-service=2.3.0=py38he904b0f_0
   - mkl_fft=1.1.0=py38h23d657b_0
   - mkl_random=1.1.1=py38h0573a6f_0
+  - more-itertools=8.5.0=py_0
   - mpi=1.0=mpich
   - mpi4py=3.0.3=py38h028fd6f_0
   - mpich=3.3.2=hc856adb_0
   - ncurses=6.2=he6710b0_1
   - numpy=1.18.5=py38ha1c710e_0
   - numpy-base=1.18.5=py38hde5b4d6_0
+  - openssl=1.1.1g=h14c3975_1
+  - packaging=20.4=py_0
   - pip=20.1.1=py38_1
+  - pluggy=0.13.1=py38_0
+  - py=1.9.0=py_0
+  - pyparsing=2.4.7=py_0
+  - pytest=6.0.2=py38_0
+  - pytest-timeout=1.4.2=py_0
   - python=3.8.1=h0371630_1
   - readline=7.0=h7b6447c_5
   - scipy=1.5.0=py38h0b6359f_0
@@ -34,11 +46,9 @@ dependencies:
   - six=1.15.0=py_0
   - sqlite=3.32.3=h62c20be_0
   - tk=8.6.10=hbc83047_0
+  - toml=0.10.1=py_0
   - wheel=0.34.2=py38_0
   - xz=5.2.5=h7b6447c_0
   - zlib=1.2.11=h7b6447c_3
-  - intelpython=2020.1=0
-  - libffi=3.2.1=11
-  - openssl=1.1.1g=h14c3975_1
-prefix: /data/home/apw419/.conda/envs/STES
+prefix: /data/home/apw419/.conda/envs/STE
 
