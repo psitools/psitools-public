@@ -27,7 +27,8 @@ import pytest
 from . import direct
 
 # Tolerance for tests
-rtol = 5e-7
+# Needs to be rather loose as multithreaded BLAS results vary
+rtol = 5e-6
 
 
 @pytest.mark.mpi_skip()
