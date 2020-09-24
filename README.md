@@ -26,7 +26,7 @@ Please cite the Zenodo record and appropriate papers if using in a publication.
 
 ## Testing
 
-One way run functional tests, using the included conda specification:
+One way to run functional tests, using the included conda specification:
 
     $ conda env create -f anaconda_environments/STE_environment.yml
     $ conda activate STE
