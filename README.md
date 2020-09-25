@@ -4,7 +4,7 @@
 This is a Python package named psitools. It implements numerical methods and driver routines for solving the linear stability problem of the Polydispserse Streaming Instability (Paardekooper et al. 2020a,b; McNally et al. 2020). Install the whole thing in a
 Python virtualenv to test. The setup.py is in this dir.
 
-Please cite the Zenodo record and appropriate papers if using in a publication.
+Please cite the Zenodo record and appropriate papers if you use psitools in a publication.
 
 ## Contents
  
@@ -20,7 +20,8 @@ Please cite the Zenodo record and appropriate papers if using in a publication.
     * `psitools/tanhsinh.py`: TanhSinh quadrature implementation
     * `psitools/taus_gridding.py`: Gridding functions for direct solver
     * `psitools/terminalvelocitysolver.py`: Terminal velocity approximation PSI eigensolver 
-* `psitools_examples/`: some usage examples
+    * `psitools/test_*`: pytest tests, provides functional examples
+* `psitools_examples/`: Some additional usage examples
 * `anaconda_environments/`: Anaconda Python environment specification with required packages
 
 
