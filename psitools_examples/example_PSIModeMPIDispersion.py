@@ -4,7 +4,7 @@
 import numpy as np
 import time
 import h5py
-import psi_mode_mpi
+import psitools.psi_mode_mpi
 
 batchname = 'testPSIModeMPIDispersion'
 datafile_hdf5 = batchname+'.hdf5'
@@ -46,7 +46,7 @@ for zval in Zs:
                     })
 
 # get the MPI execution object
-ms = psi_mode_mpi.DispersionRelationMpiScheduler(wall_start, wall_limit_total)
+ms = psitools.psi_mode_mpi.DispersionRelationMpiScheduler(wall_start, wall_limit_total)
 
 # run the calculations
 finishedruns = ms.run(arglist)
