@@ -1,8 +1,8 @@
 
-# psitools 
+# psitools
+ ![](psitools_examples/psitools_logo.png)
 
-This is a Python package named psitools. It implements numerical methods and driver routines for solving the linear stability problem of the Polydispserse Streaming Instability (Paardekooper et al. 2020a,b; McNally et al. 2020). Install the whole thing in a
-Python virtualenv to test. The setup.py is in this dir.
+This is a Python package named psitools. It implements numerical methods and driver routines for solving the linear stability problem of the Polydispserse Streaming Instability (Paardekooper et al. 2020a,b; McNally et al. 2020). 
 
 Please cite the Zenodo record and appropriate papers if you use psitools in a publication.
 
