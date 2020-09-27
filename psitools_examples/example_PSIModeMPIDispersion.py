@@ -1,5 +1,5 @@
 # When run as MPI, this does a grid of calculations.
-# Usage mpirun -np 5 python3 -u example_PSIModeMPIDispersion.py
+# Usage:  mpirun -np 16 python3 -u example_PSIModeMPIDispersion.py
 #
 import numpy as np
 import time
@@ -9,14 +9,14 @@ import psitools.psi_mode_mpi
 batchname = 'testPSIModeMPIDispersion'
 datafile_hdf5 = batchname+'.hdf5'
 
-stokes_range = [1e-8, 1e-0]
+stokes_range = [1e-8, 1e-1]
 dust_to_gas_ratio = 3.0
 
-real_range = [-2.0, 2.0]
-imag_range = [-2.0, 2.0]
+real_range = [-7.5, 7.5]
+imag_range = [-12.5, 02.5]
 
-wave_number_x = 1e2
-wave_number_z = 1e1
+wave_number_x = 5e1
+wave_number_z = 1e2
 
 
 wall_start = time.time()
@@ -24,8 +24,8 @@ wall_limit_total = 70*60*60
 
 
 # Set up the list of runs
-Raxis = np.linspace(real_range[0], real_range[1], 32)
-Iaxis = np.linspace(imag_range[0], imag_range[1], 32)
+Raxis = np.linspace(real_range[0], real_range[1], 512)
+Iaxis = np.linspace(imag_range[0], imag_range[1], 512)
 Rgrid, Igrid = np.meshgrid(Raxis, Iaxis)
 Zs = list(zip(Rgrid.flatten(), Igrid.flatten()))
 # arglist is a dict of dicts, with dicts for each method call
@@ -36,6 +36,7 @@ for zval in Zs:
     arglist.append({'__init__': {
                         'stokes_range': stokes_range,
                         'dust_to_gas_ratio': dust_to_gas_ratio,
+                        'size_distribution_power': 3.5,
                         'real_range': real_range,
                         'imag_range': imag_range},
                     'dispersion': {
