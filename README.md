@@ -6,6 +6,8 @@ This is a Python package named psitools. It implements numerical methods and dri
 
 Please cite the Zenodo record and appropriate papers if you use psitools in a publication.
 
+Figure: A colorized PSI dispersion relation map in the complex plane, showing the poles and branch cuts in a case for a growing size resonance mode.
+
 ## Contents
  
 * `psitools/`: package source
@@ -33,21 +35,16 @@ One way to run functional tests, using the included conda specification:
     $ conda activate STE
 
 Then install psitools, by directing pip (not system pip, the one inside the 
-above environment) to the location of the setup.py
+above environment) to the location of the setup.py:
 
     $ pip install -e ~/path/to/repo
 
-Before trying to run tests, deactivate and reactivate the virtualenv or conda env
-
-    $ deactivate
-    $ . test-psitools/bin/activate
-
-or 
+Before trying to run tests, deactivate and reactivate the conda environment:
 
     $ conda deactivate
     $ conda activate STE
 
-Then try pytest
+Then try pytest:
 
     $ pytest -m "not mpi" path/to/psitools-public
 
@@ -60,7 +57,7 @@ To run a specific test, do something like:
     $ mpirun -np 4 python -m pytest --pyargs psitools --with-mpi \
         -s -k "test_psi_grid_refine_0" path/to/psitools-public
         
-Or, testing with a virtualenv, something like:
+Or, testing with a virtualenv, do something like:
 
     $ python -m venv --system-site-packages test-psitools/
     $ . test-psitools/bin/activate
