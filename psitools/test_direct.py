@@ -92,6 +92,7 @@ def test_doesitrun():
 
 
 @pytest.mark.mpi_skip()
+@pytest.mark.slow()
 @pytest.mark.timeout(60)
 def test_PB_0(tmpdir):
     ans = run_PB({
@@ -116,6 +117,7 @@ def test_PB_0(tmpdir):
 
 
 @pytest.mark.mpi_skip()
+@pytest.mark.slow()
 @pytest.mark.timeout(60)
 def test_PB_1(tmpdir):
     ans = run_PB({
@@ -141,6 +143,7 @@ def test_PB_1(tmpdir):
 
 
 @pytest.mark.mpi_skip()
+@pytest.mark.slow()
 @pytest.mark.timeout(60)
 def test_PB_2(tmpdir):
     ans = run_PB({
@@ -163,8 +166,30 @@ def test_PB_2(tmpdir):
     npt.assert_allclose(ans.real, ref.real, rtol=rtol)
     npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
 
+@pytest.mark.mpi_skip()
+@pytest.mark.timeout(60)
+def test_PB_3(tmpdir):
+    ans = run_PB({
+            'tsint': (1e-08, 1.56),
+            'epstot': 3,
+            'beta': -3.5,
+            'aL': 2.0/3.0*1.0,
+            'aP': 1.0,
+            'bumpfac': 2.0,
+            'Kx': 4.0,
+            'Kz': 100.0,
+            'refine': 1,
+            'gridding': 'chebyshevroots',
+            'prefix': tmpdir,
+            'alpha': None})
+    #assert ans == 1
+    ref = np.array((-0.04298854605814622+0.13764347038117714j))
+    npt.assert_allclose(ans.real, ref.real, rtol=rtol)
+    npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
+
 
 @pytest.mark.mpi_skip()
+@pytest.mark.slow()
 @pytest.mark.timeout(60)
 def test_PL_0(tmpdir):
     # MRN tests
@@ -188,6 +213,7 @@ def test_PL_0(tmpdir):
 
 
 @pytest.mark.mpi_skip()
+@pytest.mark.slow()
 @pytest.mark.timeout(60)
 def test_PL_1(tmpdir):
     ans = run_PL({
@@ -208,6 +234,7 @@ def test_PL_1(tmpdir):
 
 
 @pytest.mark.mpi_skip()
+@pytest.mark.slow()
 @pytest.mark.timeout(60)
 def test_LN_0(tmpdir):
     ans = run_LN({
