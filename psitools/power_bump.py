@@ -28,6 +28,13 @@ import scipy.integrate
 import scipy.optimize
 
 
+def lognormpdf(y, s, loc, scale=1.0):
+    """Avoid actually using scipy.
+    """
+    x = (y - loc) / scale
+    return np.exp(-np.log(x)**2 / (2*s**2) - np.log(s*x*np.sqrt(2.0*np.pi)))
+
+
 class PowerBump():
     def __init__(self, amin, aP, aL=None, aR=None, bumpfac=2.0, beta=-3.5,
                  epstot=None):
