@@ -25,9 +25,14 @@ Figure: A colorized PSI dispersion relation map in the complex plane, showing th
     * `psitools/test_*`: pytest tests, provides functional examples
 * `psitools_examples/`: Some additional usage examples
 * `anaconda_environments/`: Anaconda Python environment specification with required packages
-
+* `.circleci/` CircleCI based test setup for the GitHub repo.
 
 ## Testing
+
+The package includes tests built with pytest. There are several tags for selecting tests: 
+
+* `mpi`: Tests to run with pytest-mpi
+* `slow`: Tests which take too long to use in the CI autotest
 
 One way to run functional tests, using the included conda specification:
 
