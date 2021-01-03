@@ -56,6 +56,18 @@ def run_PB(testargs):
 
 
 @pytest.mark.mpi_skip()
+def run_PBT(testargs):
+    ait = direct.ConvergerPowerBumpTail(**testargs)
+    ait.runcompute()
+    print('-------------------------------------')
+    print(testargs)
+    print('Fastest Eigenvalues')
+    for val in ait.fastesteigens:
+        print(val)
+    return ait.fastesteigens
+
+
+@pytest.mark.mpi_skip()
 def run_LN(testargs):
     ait = direct.ConvergerLogNormal(**testargs)
     ait.runcompute()
@@ -108,7 +120,6 @@ def test_PB_0(tmpdir):
             'gridding': 'chebyshevroots',
             'prefix': tmpdir,
             'alpha': None})
-    #assert ans == 1
     ref = np.array((-0.04298854605814622+0.13764347038117714j,
                     -0.04401630203296608+0.13752657929813472j,
                     -0.04454892638085971+0.1374699433910088j))
@@ -190,6 +201,56 @@ def test_PB_3(tmpdir):
 
 @pytest.mark.mpi_skip()
 @pytest.mark.slow()
+@pytest.mark.timeout(60)
+def test_PBT_0(tmpdir):
+    ans = run_PBT({
+             'tsint': (1e-08, 1.56),
+             'epstot': 3,
+             'beta': -3.5,
+             'aL': 2.0/3.0*1.0,
+             'aP': 1.0,
+             'aBT': 1.0e-4,
+             'bumpfac': 2.0,
+             'Kx': 4.0,
+             'Kz': 100.0,
+             'refine': 3,
+             'gridding': 'chebyshevroots',
+             'prefix': tmpdir,
+             'alpha': None})
+    ref = np.array(
+                   (-0.04153265004675379+0.13846049287817908j,
+                    -0.041966635201637514+0.13811256698525176j,
+                    -0.0418667083429648+0.13817651254264796j))
+    npt.assert_allclose(ans.real, ref.real, rtol=rtol)
+    npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
+
+
+@pytest.mark.mpi_skip()
+@pytest.mark.timeout(60)
+def test_PBT_1(tmpdir):
+    ans = run_PBT({
+             'tsint': (1e-08, 1.56),
+             'epstot': 3,
+             'beta': -3.5,
+             'aL': 2.0/3.0*1.0,
+             'aP': 1.0,
+             'aBT': 1.0e-4,
+             'bumpfac': 2.0,
+             'Kx': 4.0,
+             'Kz': 100.0,
+             'refine': 3,
+             'gridding': 'logarithmic',
+             'prefix': tmpdir,
+             'alpha': 4e-8})
+    ref = np.array(
+                   (0.001106062161350275-0.009826073486222765j,
+                    0.002129071217410124-0.007350562586222042j,
+                    0.002131168782156639-0.00662131639196411j))
+    npt.assert_allclose(ans.real, ref.real, rtol=rtol)
+    npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
+
+
+@pytest.mark.mpi_skip()
 @pytest.mark.timeout(60)
 def test_PL_0(tmpdir):
     # MRN tests
