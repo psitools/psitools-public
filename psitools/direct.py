@@ -31,7 +31,7 @@ from abc import ABC, abstractmethod
 
 # Modules from this package
 from .taus_gridding import gridmap, get_gridding
-from .power_bump import PowerBump, lognormpdf
+from .power_bump import PowerBump, PowerBumpTail, lognormpdf
 from .tanhsinh import TanhSinh
 
 
@@ -257,9 +257,9 @@ class StreamingSolver:
             self.add_size_diffusion()
         if self.alpha is not None:
             self.add_turbulence(Kx, Kz)
-            if self.dust_pressure == True:
+            if self.dust_pressure is True:
                 self.add_dust_pressure()
-        elif  self.dust_pressure == True:
+        elif  self.dust_pressure is True:
             print("no dust pressure is possible with no alpha")
 
         # this line converts to PBL i.e. Benitez-Llambay eigenspace
@@ -615,6 +615,52 @@ class StreamingSolverPowerBump(StreamingSolver):
         return self.massdist(ts)
 
 
+class StreamingSolverPowerBumpTail(StreamingSolverPowerBump):
+    """With the cratering-bump inspired bump dust distribution
+       sigma is the width, and peak is the peak size, and a steeper
+       power-law tail."""
+
+    def __init__(self, taus, epstot, beta, aL, aP, aBT, bumpfac,
+                 sigdiff=None, c=0.05, eta=0.05*0.05, alpha=None,
+                 dust_pressure=False):
+        self.taus = taus
+        self.epstot = epstot
+        self.beta = beta
+        self.eta = eta
+        self.c = c
+        self.alpha = alpha
+        self.dust_pressure = dust_pressure
+        self.tsmax = taus.max()
+        self.tsmin = taus.min()
+        self.weights = self.get_trapz_weights()
+        self.aL = aL
+        self.aP = aP
+        self.aBT = aBT
+        self.bumpfac = bumpfac
+        self.sigdiff = sigdiff
+        self.deltatausmask = None
+        self.powerbumptail = PowerBumpTail(amin=self.tsmin,
+                                   aL=self.aL,
+                                   aP=self.aP,
+                                   aBT=self.aBT,
+                                   aR=self.tsmax,
+                                   bumpfac=self.bumpfac,
+                                   beta=self.beta,
+                                   epstot=self.epstot)
+        self.pbdisc = self.powerbumptail.get_discontinuity()
+        self.massdist = self.powerbumptail.sigma0
+        # Quadpack isn't the best, but we do what we can
+        epsrel = 1e-12
+        epsabs = 1e-12
+        integrator = TanhSinh()
+        self.epsnorm = scipy.integrate.quad(self.massdist,
+                                            self.tsmin, self.tsmax, limit=100,
+                                            epsabs=epsabs, epsrel=epsrel,
+                                            points=[self.pbdisc])[0]
+        self.J0 = integrator.integrate(self.dJ0, self.tsmin, self.tsmax)
+        self.J1 = integrator.integrate(self.dJ1, self.tsmin, self.tsmax)
+
+
 class ConvergerBase(ABC):
     """Object for running a convergence study on a single modee"""
 
@@ -850,4 +896,52 @@ class ConvergerPowerBump(Converger):
                                         beta=self.beta, aL=self.aL,
                                         aP=self.aP, bumpfac=self.bumpfac,
                                         alpha=self.alpha,
+                                        dust_pressure=self.dust_pressure)
+
+
+class ConvergerPowerBumpTail(ConvergerPowerBump):
+    """Convergence study with a power-law + lognormal bump + sttep tail dust
+       distribution"""
+
+    def __init__(self, tsint, epstot, beta, aL, aP, aBT, bumpfac, Kx, Kz, ll=6,
+                 refine=5, prefix='outputs', gridding='chebyshevroots',
+                 alpha=None, dust_pressure=False):
+        self.tsint = tsint
+        self.epstot = epstot
+        self.beta = beta
+        self.aL = aL
+        self.aP = aP
+        self.aBT = aBT
+        self.bumpfac = bumpfac
+        self.alpha = alpha
+        self.dust_pressure = dust_pressure
+        self.Kx = Kx
+        self.Kz = Kz
+        self.ll = ll
+        self.refine = refine
+        self.reltol = 1e-14
+        if gridding not in gridmap.keys():
+            raise ValueError('Unknown gridding ', gridding)
+        self.gridding = gridmap[gridding]
+        repstr = 'ConvergerPowerBumpTail'
+        for val in [epstot, tsint[0], tsint[1], beta, aL, aP, aBT, bumpfac,
+                    Kx, Kz, ll, refine]:
+            repstr += '{:e}'.format(val)
+        if alpha is not None:
+            repstr += '{:e}'.format(alpha)
+        if dust_pressure:
+            repstr += 'dust_pressure'
+        repstr += gridding
+        self.picklename = os.path.join(prefix,
+                              self.picklenameprefix
+                              + hashlib.md5(
+                                  repstr.encode(encoding='utf-8')).hexdigest()
+                              + '.pickle')
+
+    def get_StreamingSolver(self, ntaus):
+        taus = get_gridding(self.gridding, self.tsint, ntaus)
+        return StreamingSolverPowerBumpTail(taus, epstot=self.epstot,
+                                        beta=self.beta, aL=self.aL,
+                                        aP=self.aP, aBT=self.aBT,
+                                        bumpfac=self.bumpfac, alpha=self.alpha,
                                         dust_pressure=self.dust_pressure)

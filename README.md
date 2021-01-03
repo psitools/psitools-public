@@ -4,6 +4,8 @@
 
 This is a Python package named psitools. It implements numerical methods and driver routines for solving the linear stability problem of the Polydispserse Streaming Instability (Paardekooper et al. 2020a,b; McNally et al. 2020). 
 
+Zenodo record for all versions 10.5281/zenodo.4305344
+
 Please cite the Zenodo record and appropriate papers if you use psitools in a publication.
 
 Figure: A colorized PSI dispersion relation map in the complex plane, showing the poles and branch cuts in a case for a growing size resonance mode.
