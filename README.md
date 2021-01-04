@@ -80,12 +80,13 @@ And continue as before.
 * Francesco Lovascio <f.lovascio@qmul.ac.uk>
 
 ## Papers
-*  Polydisperse streaming instability - I. Tightly coupled particles and the terminal velocity approximation
-   Paardekooper, Sijme-Jan; McNally, Colin P.; Lovascio, Francesco
-   Monthly Notices of the Royal Astronomical Society, Volume 499, Issue 3, pp.4223-4238
-   DOI: 10.1093/mnras/staa3162
-   ADS: 2020MNRAS.499.4223P
-   arXiv:2010.01145
+
+    Polydisperse streaming instability - I. Tightly coupled particles and the terminal velocity approximation
+    Paardekooper, Sijme-Jan; McNally, Colin P.; Lovascio, Francesco
+    Monthly Notices of the Royal Astronomical Society, Volume 499, Issue 3, pp.4223-4238
+    DOI: 10.1093/mnras/staa3162
+    ADS: 2020MNRAS.499.4223P
+    arXiv:2010.01145`
 
 ## License
 
