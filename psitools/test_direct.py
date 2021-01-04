@@ -177,6 +177,7 @@ def test_PB_2(tmpdir):
     npt.assert_allclose(ans.real, ref.real, rtol=rtol)
     npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
 
+
 @pytest.mark.mpi_skip()
 @pytest.mark.timeout(60)
 def test_PB_3(tmpdir):
@@ -193,7 +194,6 @@ def test_PB_3(tmpdir):
             'gridding': 'chebyshevroots',
             'prefix': tmpdir,
             'alpha': None})
-    #assert ans == 1
     ref = np.array((-0.04298854605814622+0.13764347038117714j))
     npt.assert_allclose(ans.real, ref.real, rtol=rtol)
     npt.assert_allclose(ans.imag, ref.imag, rtol=rtol)
@@ -251,6 +251,7 @@ def test_PBT_1(tmpdir):
 
 
 @pytest.mark.mpi_skip()
+@pytest.mark.slow()
 @pytest.mark.timeout(60)
 def test_PL_0(tmpdir):
     # MRN tests
