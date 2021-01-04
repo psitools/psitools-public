@@ -86,7 +86,7 @@ And continue as before.
     Monthly Notices of the Royal Astronomical Society, Volume 499, Issue 3, pp.4223-4238
     DOI: 10.1093/mnras/staa3162
     ADS: 2020MNRAS.499.4223P
-    arXiv:2010.01145`
+    arXiv:2010.01145
 
 ## License
 
