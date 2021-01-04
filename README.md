@@ -2,9 +2,9 @@
 # psitools
  ![](psitools_examples/psitools_logo.png)
 
-This is a Python package named psitools. It implements numerical methods and driver routines for solving the linear stability problem of the Polydispserse Streaming Instability (Paardekooper et al. 2020a,b; McNally et al. 2020). 
+This is a Python package named psitools. It implements numerical methods and driver routines for solving the linear stability problem of the Polydispserse Streaming Instability ([Paardekooper et al. 2020a](https://ui.adsabs.harvard.edu/abs/2020MNRAS.499.4223P/abstract),b; McNally et al. 2020). 
 
-Zenodo record for all versions 10.5281/zenodo.4305344
+Zenodo record for all versions [10.5281/zenodo.4305344](https://doi.org/10.5281/zenodo.4305344)
 
 Please cite the Zenodo record and appropriate papers if you use psitools in a publication.
 
@@ -78,6 +78,14 @@ And continue as before.
 * Colin McNally <colin@colinmcnally.ca>
 * Sijme-Jan Paardekooper <s.j.paardekooper@qmul.ac.uk>
 * Francesco Lovascio <f.lovascio@qmul.ac.uk>
+
+## Papers
+*  Polydisperse streaming instability - I. Tightly coupled particles and the terminal velocity approximation
+   Paardekooper, Sijme-Jan; McNally, Colin P.; Lovascio, Francesco
+   Monthly Notices of the Royal Astronomical Society, Volume 499, Issue 3, pp.4223-4238
+   DOI: 10.1093/mnras/staa3162
+   ADS: 2020MNRAS.499.4223P
+   arXiv:2010.01145
 
 ## License
 
