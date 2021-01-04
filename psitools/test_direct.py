@@ -226,6 +226,7 @@ def test_PBT_0(tmpdir):
 
 
 @pytest.mark.mpi_skip()
+@pytest.mark.slow()
 @pytest.mark.timeout(60)
 def test_PBT_1(tmpdir):
     ans = run_PBT({
