@@ -90,13 +90,15 @@ And continue as before.
 
     Polydisperse Streaming Instability II. Methods for solving the linear stability problem 
     Paardekooper, Sijme-Jan; McNally, Colin P.; Lovascio, Francesco
-    Monthly Notices of the Royal Astronomical Society, in press, 2021
+    Monthly Notices of the Royal Astronomical Society, Volume 502, Issue 2, pp.1579-1595, 2021
+    DOI: 10.1093/mnras/stab111 
     ADS: 2021arXiv210104763P
     arXiv:2101.04763
     
     Polydisperse Streaming Instability III. Dust evolution encourages fast instability
     McNally, Colin P.; Lovascio, Francesco; Paardekooper, Sijme-Jan
-    Monthly Notices of the Royal Astronomical Society, in press, 2021
+    Monthly Notices of the Royal Astronomical Society, Volume 502, Issue 1, pp.1469-1486, 2021
+    DOI: 10.1093/mnras/stab112
     ADS: 2021arXiv210104761M
     arXiv:2101.04763
 
