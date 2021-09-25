@@ -21,6 +21,7 @@
 # NB: Sijme-Jan wrote this.
 import numpy as np
 import scipy.integrate as integrate
+import matplotlib.pyplot as plt
 
 import warnings
 
@@ -454,3 +455,76 @@ class PSIDispersion():
         if scalar_input:
             return np.squeeze(ret)
         return np.reshape(ret, original_shape)
+
+    def eigenvector(self, w, wave_number_x, wave_number_z, viscous_alpha=0):
+        """Calculate the eigenvector for eigenvalue w.
+
+        Args:
+            w: Eigenvalue as previously found from self.calculate().
+            wave_number_x: Nondimensional (using YG05) x wave number
+            wave_number_z: Nondimensional (using YG05) z wave number
+            viscous_alpha (optional): Background turbulent gas viscosity parameter. Defaults to zero.
+
+        """
+
+        # Should be zero, but sets up dispersion object at the same time
+        # Thisin case self.calculate() has not been called yet.
+        val = self.calculate(w, wave_number_x, wave_number_z, viscous_alpha)
+
+        M = self.matrix_M(w)
+        P = self.matrix_P(w)
+
+        # B*vghat = 0, eigenvalues given by det(B)=0
+        B = M + P
+
+        # Take vgxhat = 1, calculate remaining gas velocity components
+        Bprime = [[B[1,1], B[1,2]], [B[2,1], B[2,2]]]
+        b = [-B[1,0], -B[2,0]]
+
+        v = np.linalg.solve(Bprime, b)
+
+        vg = [1.0, v[0], v[1]]
+
+        # Gas density perturbation
+        rhog = (self.kx*vg[0] + self.kz*vg[2])/(w - self.kx*self.vgx)
+
+        A = self.matrix_inverse_A(w)
+        AD = self.matrix_AD(A, w)
+
+        # Matrix multiply to get dust velocity
+        ux = lambda x: AD[0][0](x)*vg[0] + AD[0][1](x)*vg[1] + AD[0][2](x)*vg[2]
+        uy = lambda x: AD[1][0](x)*vg[0] + AD[1][1](x)*vg[1] + AD[1][2](x)*vg[2]
+        uz = lambda x: AD[2][0](x)*vg[0] + AD[2][1](x)*vg[1] + AD[2][2](x)*vg[2]
+
+        # Size density perturbation
+        sigma = lambda x: self.mu*self.size_density(x)*(self.kx*ux(x) + self.kz*uz(x))/(w - self.kx*self.ux(x))
+
+
+        gas_cont = \
+          self.kx*self.vgx*rhog + self.kx*vg[0] + self.kz*vg[2] - w*rhog
+        f = lambda x: sigma(x)*(self.ux(x) - self.vgx)/self.mu/self.size_density(x)/x + (ux(x) - vg[0])/x
+        gas_momx = (self.kx*self.vgx*vg[0] + self.kx*self.c**2*rhog + 2j*vg[1] + 1j*self.average(f) - w*vg[0])/w/vg[0]
+        f = lambda x: sigma(x)*(self.uy(x) - self.vgy)/self.mu/self.size_density(x)/x + (uy(x) - vg[1])/x
+        gas_momy = (self.kx*self.vgx*vg[1] - 0.5j*vg[0] + 1j*self.average(f) - w*vg[1])/w/vg[1]
+        f = lambda x: (uz(x) - vg[2])/x
+        gas_momz = (self.kx*self.vgx*vg[2] + self.kz*self.c**2*rhog + 1j*self.average(f) - w*vg[2])/w/vg[2]
+
+        #print(gas_cont, gas_momx, gas_momy, gas_momz)
+
+        #f = lambda x: self.kx*self.ux(x)*sigma(x) + self.mu*self.size_density(x)*(self.kx*ux(x) + self.kz*uz(x))
+
+        #f = lambda x: self.kx*self.ux(x)*ux(x) + 2j*uy(x) - 1j*(ux(x) - vg[0])/x - 1j*rhog*(self.ux(x) - self.vgx)/x
+        #f = lambda x: self.kx*self.ux(x)*uy(x) - 0.5j*ux(x) - 1j*(uy(x) - vg[1])/x - 1j*rhog*(self.uy(x) - self.vgy)/x
+        #f = lambda x: self.kx*self.ux(x)*uz(x) - 1j*(uz(x) - vg[2])/x
+
+        #tau = np.logspace(-3,-1,100)
+
+        #plt.plot(tau, np.real(f(tau)))
+        #plt.plot(tau, np.real(w*uz(tau)))
+        #plt.plot(tau, np.imag(f(tau)))
+        #plt.plot(tau, np.imag(w*sigma(tau)))
+
+        #plt.xscale('log')
+        #plt.show()
+
+        return rhog, vg, sigma, [ux, uy, uz]
