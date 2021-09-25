@@ -72,15 +72,19 @@ class PSIMode():
                  clean_tol=1.0e-4,
                  max_secant_iterations=100,
                  tanhsinh_integrator=None):
+        disp = psid.PSIDispersion(dust_to_gas_ratio,
+                                  stokes_range,
+                                  sound_speed_over_eta,
+                                  size_distribution_power,
+                                  single_size_flag,
+                                  size_density,
+                                  tanhsinh_integrator)
         # If dispersion relation is given by f(w)=0, this function calculates
         # the function f(w).
-        self.dispersion = psid.PSIDispersion(dust_to_gas_ratio,
-                                             stokes_range,
-                                             sound_speed_over_eta,
-                                             size_distribution_power,
-                                             single_size_flag,
-                                             size_density,
-                                             tanhsinh_integrator).calculate
+        self.dispersion = disp.calculate
+
+        self.eigenvector = disp.eigenvector
+
         # Create rectangular domain
         self.domain = cr.Rectangle(real_range, imag_range)
         self.n_sample = n_sample
