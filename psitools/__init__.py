@@ -17,9 +17,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with psitools.  If not, see <https://www.gnu.org/licenses/>.
 #
-from . import complex_roots_mpi
+#from . import complex_roots_mpi
 from . import direct
-from . import direct_mpi
+#from . import direct_mpi
 from . import monodisperse_si
 from . import power_bump
 from . import psi_mode
