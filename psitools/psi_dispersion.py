@@ -21,7 +21,7 @@
 # NB: Sijme-Jan wrote this.
 import numpy as np
 import scipy.integrate as integrate
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 import warnings
 
@@ -468,7 +468,7 @@ class PSIDispersion():
         """
 
         # Should be zero, but sets up dispersion object at the same time
-        # Thisin case self.calculate() has not been called yet.
+        # This in case self.calculate() has not been called yet.
         val = self.calculate(w, wave_number_x, wave_number_z, viscous_alpha)
 
         M = self.matrix_M(w)
@@ -499,15 +499,16 @@ class PSIDispersion():
         # Size density perturbation
         sigma = lambda x: self.mu*self.size_density(x)*(self.kx*ux(x) + self.kz*uz(x))/(w - self.kx*self.ux(x))
 
+        return rhog, vg, sigma, [ux, uy, uz]
 
-        gas_cont = \
-          self.kx*self.vgx*rhog + self.kx*vg[0] + self.kz*vg[2] - w*rhog
-        f = lambda x: sigma(x)*(self.ux(x) - self.vgx)/self.mu/self.size_density(x)/x + (ux(x) - vg[0])/x
-        gas_momx = (self.kx*self.vgx*vg[0] + self.kx*self.c**2*rhog + 2j*vg[1] + 1j*self.average(f) - w*vg[0])/w/vg[0]
-        f = lambda x: sigma(x)*(self.uy(x) - self.vgy)/self.mu/self.size_density(x)/x + (uy(x) - vg[1])/x
-        gas_momy = (self.kx*self.vgx*vg[1] - 0.5j*vg[0] + 1j*self.average(f) - w*vg[1])/w/vg[1]
-        f = lambda x: (uz(x) - vg[2])/x
-        gas_momz = (self.kx*self.vgx*vg[2] + self.kz*self.c**2*rhog + 1j*self.average(f) - w*vg[2])/w/vg[2]
+        #gas_cont = \
+        #  self.kx*self.vgx*rhog + self.kx*vg[0] + self.kz*vg[2] - w*rhog
+        #f = lambda x: sigma(x)*(self.ux(x) - self.vgx)/self.mu/self.size_density(x)/x + (ux(x) - vg[0])/x
+        #gas_momx = (self.kx*self.vgx*vg[0] + self.kx*self.c**2*rhog + 2j*vg[1] + 1j*self.average(f) - w*vg[0])/w/vg[0]
+        #f = lambda x: sigma(x)*(self.uy(x) - self.vgy)/self.mu/self.size_density(x)/x + (uy(x) - vg[1])/x
+        #gas_momy = (self.kx*self.vgx*vg[1] - 0.5j*vg[0] + 1j*self.average(f) - w*vg[1])/w/vg[1]
+        #f = lambda x: (uz(x) - vg[2])/x
+        #gas_momz = (self.kx*self.vgx*vg[2] + self.kz*self.c**2*rhog + 1j*self.average(f) - w*vg[2])/w/vg[2]
 
         #print(gas_cont, gas_momx, gas_momy, gas_momz)
 
@@ -520,11 +521,11 @@ class PSIDispersion():
         #tau = np.logspace(-3,-1,100)
 
         #plt.plot(tau, np.real(f(tau)))
-        #plt.plot(tau, np.real(w*uz(tau)))
+        #plt.plot(tau, np.real(w*sigma(tau)))
         #plt.plot(tau, np.imag(f(tau)))
         #plt.plot(tau, np.imag(w*sigma(tau)))
 
         #plt.xscale('log')
         #plt.show()
 
-        return rhog, vg, sigma, [ux, uy, uz]
+        #return rhog, vg, sigma, [ux, uy, uz]
