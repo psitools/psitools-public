@@ -373,7 +373,8 @@ class PSIDispersion():
 
         return np.asarray([[m11, m12, m13], [m21, m22, m23], [0, 0, m33]])
 
-    def calculate(self, w, wave_number_x, wave_number_z, viscous_alpha=0):
+    def calculate(self, w, wave_number_x, wave_number_z,
+                  viscous_alpha=0, constant_schmidt=False):
         """If the dispersion relation is f(w) = 0, this function calculates f at w.
 
         Args:
@@ -389,6 +390,8 @@ class PSIDispersion():
         # Viscosity and dust diffusion
         self.nu = viscous_alpha*self.c**2
         self.D = lambda x: (1 + x + 4*x*x)*self.nu/(1 + x*x)**2
+        if constant_schmidt is True:
+            self.D = lambda x: self.nu
 
         # Make sure we can handle both vector and scalar w
         w = np.asarray(w)
