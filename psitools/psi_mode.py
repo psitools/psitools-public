@@ -108,6 +108,7 @@ class PSIMode():
                                            clean_tol=clean_tol)
 
     def calculate(self, wave_number_x, wave_number_z, viscous_alpha=0,
+                  constant_schmidt=False,
                   guess_roots=[], count_roots=False):
         """Calculate complex mode frequency at wave number Kx and Kz and viscosity parameter viscous_alpha.
 
@@ -121,7 +122,8 @@ class PSIMode():
         self.disp = lambda z: self.dispersion(z,
                                               wave_number_x,
                                               wave_number_z,
-                                              viscous_alpha)
+                                              viscous_alpha,
+                                              constant_schmidt)
 
         # Calculate sample points and sample function values
         self.z_sample = self.domain.generate_random_sample_points(self.n_sample)
