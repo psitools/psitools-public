@@ -459,7 +459,8 @@ class PSIDispersion():
             return np.squeeze(ret)
         return np.reshape(ret, original_shape)
 
-    def eigenvector(self, w, wave_number_x, wave_number_z, viscous_alpha=0):
+    def eigenvector(self, w, wave_number_x, wave_number_z, viscous_alpha=0,
+                    constant_schmidt=False):
         """Calculate the eigenvector for eigenvalue w.
 
         Args:
@@ -472,7 +473,8 @@ class PSIDispersion():
 
         # Should be zero, but sets up dispersion object at the same time
         # This in case self.calculate() has not been called yet.
-        val = self.calculate(w, wave_number_x, wave_number_z, viscous_alpha)
+        val = self.calculate(w, wave_number_x, wave_number_z, viscous_alpha,
+                             constant_schmidt)
 
         M = self.matrix_M(w)
         P = self.matrix_P(w)
@@ -500,7 +502,7 @@ class PSIDispersion():
         uz = lambda x: AD[2][0](x)*vg[0] + AD[2][1](x)*vg[1] + AD[2][2](x)*vg[2]
 
         # Size density perturbation
-        sigma = lambda x: self.mu*self.size_density(x)*(self.kx*ux(x) + self.kz*uz(x))/(w - self.kx*self.ux(x))
+        sigma = lambda x: self.mu*self.size_density(x)*(self.kx*ux(x) + self.kz*uz(x))/(w - self.kx*self.ux(x) + 1j*(self.kx*self.kx + self.kz*self.kz)*self.D(x))
 
         return rhog, vg, sigma, [ux, uy, uz]
 
